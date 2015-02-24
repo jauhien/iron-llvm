@@ -15,7 +15,8 @@ use core::*;
 use self::ffi::*;
 
 pub struct Context {
-    context: ContextRef
+    context: ContextRef,
+    is_global: bool
 }
 
 impl Context {
@@ -24,7 +25,21 @@ impl Context {
             LLVMContextCreate()
         };
 
-        Context{context: context}
+        Context{
+            context: context,
+            is_global: false
+        }
+    }
+
+    pub fn get_global() -> Context {
+        let context = unsafe {
+            LLVMGetGlobalContext()
+        };
+
+        Context{
+            context: context,
+            is_global: true
+        }
     }
 
     pub fn get_ref(&mut self) -> ContextRef {
@@ -34,8 +49,10 @@ impl Context {
 
 impl Drop for Context {
     fn drop(&mut self) {
-        unsafe {
-            LLVMContextDispose(self.context);
+        if !self.is_global {
+            unsafe {
+                LLVMContextDispose(self.context);
+            }
         }
     }
 }

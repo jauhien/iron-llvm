@@ -21,9 +21,15 @@ mod llvmdeps;
 fn it_works() {
     let mut c1 = Context::new();
 
-    let c = c1.get_ref();
+    let c1_ref = c1.get_ref();
 
-    unsafe {
-        let gc = ffi::LLVMGetGlobalContext();
-    }
+    let mut gc1 = Context::get_global();
+    let gc1_ref = gc1.get_ref();
+
+    let gc = unsafe {
+        ffi::LLVMGetGlobalContext()
+    };
+
+    assert!(gc == gc1_ref);
+    assert!(c1_ref != gc);
 }
