@@ -6,24 +6,17 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#![feature(libc)]
+#![feature(old_io)]
+#![feature(os)]
 
-extern crate libc;
-#[macro_use] #[no_link] extern crate rustc_bitflags;
+use std::old_io::Command;
+use std::os;
 
-use core::context::*;
-
-pub mod core;
-
-mod llvmdeps;
-
-#[test]
-fn it_works() {
-    let mut c1 = Context::new();
-
-    let c = c1.get_ref();
-
-    unsafe {
-        let gc = ffi::LLVMGetGlobalContext();
-    }
+fn main() {
+    Command::new("python2").arg("src/etc/mklldeps.py")
+        .arg("src/llvmdeps.rs")
+        .arg("core")
+        .arg("llvm-config")
+        .status()
+        .unwrap();
 }

@@ -14,6 +14,10 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 
+use libc::c_void;
+
+pub mod context;
+
 // Core LLVM Types and Enumerations, code taken mostly from the Rust
 // Project (src/librustc_llvm/lib.rs)
 
@@ -295,3 +299,6 @@ pub enum DiagnosticSeverity {
     Remark,
     Note,
 }
+
+pub type DiagnosticHandler = unsafe extern "C" fn(DiagnosticInfoRef, *mut c_void);
+pub type YieldCallback = unsafe extern "C" fn(ContextRef, *mut c_void);
