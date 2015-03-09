@@ -17,6 +17,7 @@
 use libc::c_void;
 
 pub mod context;
+pub mod types;
 
 // Core LLVM Types and Enumerations, code taken mostly from the Rust
 // Project (src/librustc_llvm/lib.rs)
@@ -302,3 +303,14 @@ pub enum DiagnosticSeverity {
 
 pub type DiagnosticHandler = unsafe extern "C" fn(DiagnosticInfoRef, *mut c_void);
 pub type YieldCallback = unsafe extern "C" fn(ContextRef, *mut c_void);
+
+pub mod ffi {
+    use libc::c_char;
+
+    #[link(name = "LLVMCore")]
+    extern {
+        pub fn LLVMCreateMessage(Message: *const c_char) -> *const c_char;
+
+        pub fn LLVMDisposeMessage(Message: *const c_char);
+    }
+}

@@ -11,12 +11,12 @@
 // Core LLVM: Context
 // LLVM-C header Core.h
 
-use core::*;
+use core::ContextRef;
 use self::ffi::*;
 
 pub struct Context {
     context: ContextRef,
-    is_global: bool
+    owned: bool
 }
 
 impl Context {
@@ -27,7 +27,7 @@ impl Context {
 
         Context{
             context: context,
-            is_global: false
+            owned: false
         }
     }
 
@@ -38,18 +38,25 @@ impl Context {
 
         Context{
             context: context,
-            is_global: true
+            owned: true
         }
     }
 
-    pub fn get_ref(&mut self) -> ContextRef {
+    pub unsafe fn from_ref(context_ref : ContextRef) -> Context {
+        Context{
+            context: context_ref,
+            owned: false
+        }
+    }
+
+    pub fn get_ref(&self) -> ContextRef {
         self.context
     }
 }
 
 impl Drop for Context {
     fn drop(&mut self) {
-        if !self.is_global {
+        if !self.owned {
             unsafe {
                 LLVMContextDispose(self.context);
             }
