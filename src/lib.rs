@@ -21,7 +21,7 @@ use std::io::Write;
 use libc::c_uint;
 
 use core::*;
-use core::types::Type;
+use core::types::{Type, IntType};
 
 pub mod core;
 
@@ -64,6 +64,14 @@ fn it_works() {
     ty.dump();
     writeln!(&mut stderr, "").unwrap();
     writeln!(&mut stderr, "string rep: {:?}", ty.print_to_string()).unwrap();
+    writeln!(&mut stderr, "========").unwrap();
+    writeln!(&mut stderr, "").unwrap();
+
+    let int10 = types::IntTypeRef::int_type_in_context(c1, 10);
+    writeln!(&mut stderr, "").unwrap();
+    writeln!(&mut stderr, "========").unwrap();
+    writeln!(&mut stderr, "Testing int10").unwrap();
+    writeln!(&mut stderr, "type width: {:?}", int10.get_width()).unwrap();
     writeln!(&mut stderr, "========").unwrap();
     writeln!(&mut stderr, "").unwrap();
 }

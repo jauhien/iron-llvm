@@ -61,6 +61,140 @@ impl Type for TypeRef {
     }
 }
 
+pub trait IntType : Type{
+    fn int1_type_in_context(ctx: context::Context) -> Self;
+    fn int8_type_in_context(ctx: context::Context) -> Self;
+    fn int16_type_in_context(ctx: context::Context) -> Self;
+    fn int32_type_in_context(ctx: context::Context) -> Self;
+    fn int64_type_in_context(ctx: context::Context) -> Self;
+    fn int_type_in_context(ctx: context::Context, num_bits: u32) -> Self;
+
+    fn int1_type() -> Self;
+    fn int8_type() -> Self;
+    fn int16_type() -> Self;
+    fn int32_type() -> Self;
+    fn int64_type() -> Self;
+    fn int_type(num_bits: u32) -> Self;
+
+    fn get_width(&self) -> u32;
+}
+
+pub enum IntTypeRef {
+    Ref(TypeRef)
+}
+
+impl Type for IntTypeRef {
+    fn get_ref(&self) -> TypeRef {
+        match *self {
+            IntTypeRef::Ref(rf) => rf
+        }
+    }
+}
+
+impl IntType for IntTypeRef {
+    fn int1_type_in_context(ctx: context::Context) -> IntTypeRef {
+        let rf = unsafe {
+            LLVMInt1TypeInContext(ctx.get_ref())
+        };
+
+        IntTypeRef::Ref(rf)
+    }
+
+    fn int8_type_in_context(ctx: context::Context) -> IntTypeRef {
+        let rf = unsafe {
+            LLVMInt8TypeInContext(ctx.get_ref())
+        };
+
+        IntTypeRef::Ref(rf)
+    }
+
+    fn int16_type_in_context(ctx: context::Context) -> IntTypeRef {
+        let rf = unsafe {
+            LLVMInt16TypeInContext(ctx.get_ref())
+        };
+
+        IntTypeRef::Ref(rf)
+    }
+
+    fn int32_type_in_context(ctx: context::Context) -> IntTypeRef {
+        let rf = unsafe {
+            LLVMInt32TypeInContext(ctx.get_ref())
+        };
+
+        IntTypeRef::Ref(rf)
+    }
+
+    fn int64_type_in_context(ctx: context::Context) -> IntTypeRef {
+        let rf = unsafe {
+            LLVMInt64TypeInContext(ctx.get_ref())
+        };
+
+        IntTypeRef::Ref(rf)
+    }
+
+    fn int_type_in_context(ctx: context::Context, num_bits: u32) -> IntTypeRef {
+        let rf = unsafe {
+            LLVMIntTypeInContext(ctx.get_ref(), num_bits)
+        };
+
+        IntTypeRef::Ref(rf)
+    }
+
+    fn int1_type() -> IntTypeRef {
+        let rf = unsafe {
+            LLVMInt1Type()
+        };
+
+        IntTypeRef::Ref(rf)
+    }
+
+    fn int8_type() -> IntTypeRef {
+        let rf = unsafe {
+            LLVMInt8Type()
+        };
+
+        IntTypeRef::Ref(rf)
+    }
+
+    fn int16_type() -> IntTypeRef {
+        let rf = unsafe {
+            LLVMInt16Type()
+        };
+
+        IntTypeRef::Ref(rf)
+    }
+
+    fn int32_type() -> IntTypeRef {
+        let rf = unsafe {
+            LLVMInt32Type()
+        };
+
+        IntTypeRef::Ref(rf)
+    }
+
+    fn int64_type() -> IntTypeRef {
+        let rf = unsafe {
+            LLVMInt64Type()
+        };
+
+        IntTypeRef::Ref(rf)
+    }
+
+    fn int_type(num_bits: u32) -> IntTypeRef {
+        let rf = unsafe {
+            LLVMIntType(num_bits)
+        };
+
+        IntTypeRef::Ref(rf)
+    }
+
+    fn get_width(&self) -> u32 {
+        unsafe {
+            LLVMGetIntTypeWidth(self.get_ref())
+        }
+    }
+}
+
 pub mod ffi {
     use ::Bool;
     use core::*;
@@ -102,5 +236,18 @@ pub mod ffi {
         pub fn LLVMInt32TypeInContext(C: ContextRef) -> TypeRef;
         pub fn LLVMInt64TypeInContext(C: ContextRef) -> TypeRef;
         pub fn LLVMIntTypeInContext(C: ContextRef, NumBits: c_uint) -> TypeRef;
+
+        /**
+         * Obtain an integer type from the global context with a specified bit
+         * width.
+         */
+        pub fn LLVMInt1Type() -> TypeRef;
+        pub fn LLVMInt8Type() -> TypeRef;
+        pub fn LLVMInt16Type() -> TypeRef;
+        pub fn LLVMInt32Type() -> TypeRef;
+        pub fn LLVMInt64Type() -> TypeRef;
+        pub fn LLVMIntType(NumBits: c_uint) -> TypeRef;
+
+        pub fn LLVMGetIntTypeWidth(IntegerTy: TypeRef) -> c_uint;
     }
 }
