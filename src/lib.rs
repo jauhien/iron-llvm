@@ -10,7 +10,6 @@
 
 #![feature(io)]
 #![feature(libc)]
-#![feature(std_misc)]
 
 extern crate libc;
 #[macro_use] #[no_link] extern crate rustc_bitflags;

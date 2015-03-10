@@ -195,6 +195,132 @@ impl IntType for IntTypeRef {
     }
 }
 
+pub trait FloatType : Type {
+    fn half_type_in_context(ctx: context::Context) -> Self;
+    fn float_type_in_context(ctx: context::Context) -> Self;
+    fn double_type_in_context(ctx: context::Context) -> Self;
+    fn x86fp80_type_in_context(ctx: context::Context) -> Self;
+    fn fp128_type_in_context(ctx: context::Context) -> Self;
+    fn ppcfp128_type_in_context(ctx: context::Context) -> Self;
+
+    fn half_type() -> Self;
+    fn float_type() -> Self;
+    fn double_type() -> Self;
+    fn x86fp80_type() -> Self;
+    fn fp128_type() -> Self;
+    fn ppcfp128_type() -> Self;
+}
+
+pub enum FloatTypeRef {
+    Ref(TypeRef)
+}
+
+impl Type for FloatTypeRef {
+    fn get_ref(&self) -> TypeRef {
+        match *self {
+            FloatTypeRef::Ref(rf) => rf
+        }
+    }
+}
+
+impl FloatType for FloatTypeRef {
+    fn half_type_in_context(ctx: context::Context) -> Self {
+        let rf = unsafe {
+            LLVMHalfTypeInContext(ctx.get_ref())
+        };
+
+        FloatTypeRef::Ref(rf)
+    }
+
+    fn float_type_in_context(ctx: context::Context) -> Self {
+        let rf = unsafe {
+            LLVMFloatTypeInContext(ctx.get_ref())
+        };
+
+        FloatTypeRef::Ref(rf)
+    }
+
+    fn double_type_in_context(ctx: context::Context) -> Self {
+        let rf = unsafe {
+            LLVMDoubleTypeInContext(ctx.get_ref())
+        };
+
+        FloatTypeRef::Ref(rf)
+    }
+
+    fn x86fp80_type_in_context(ctx: context::Context) -> Self {
+        let rf = unsafe {
+            LLVMX86FP80TypeInContext(ctx.get_ref())
+        };
+
+        FloatTypeRef::Ref(rf)
+    }
+
+    fn fp128_type_in_context(ctx: context::Context) -> Self {
+        let rf = unsafe {
+            LLVMFP128TypeInContext(ctx.get_ref())
+        };
+
+        FloatTypeRef::Ref(rf)
+    }
+
+    fn ppcfp128_type_in_context(ctx: context::Context) -> Self{
+        let rf = unsafe {
+            LLVMPPCFP128TypeInContext(ctx.get_ref())
+        };
+
+        FloatTypeRef::Ref(rf)
+    }
+
+    fn half_type() -> Self {
+        let rf = unsafe {
+            LLVMHalfType()
+        };
+
+        FloatTypeRef::Ref(rf)
+    }
+
+    fn float_type() -> Self {
+        let rf = unsafe {
+            LLVMFloatType()
+        };
+
+        FloatTypeRef::Ref(rf)
+    }
+
+    fn double_type() -> Self {
+        let rf = unsafe {
+            LLVMDoubleType()
+        };
+
+        FloatTypeRef::Ref(rf)
+    }
+
+    fn x86fp80_type() -> Self {
+        let rf = unsafe {
+            LLVMX86FP80Type()
+        };
+
+        FloatTypeRef::Ref(rf)
+    }
+
+    fn fp128_type() -> Self {
+        let rf = unsafe {
+            LLVMFP128Type()
+        };
+
+        FloatTypeRef::Ref(rf)
+    }
+
+    fn ppcfp128_type() -> Self{
+        let rf = unsafe {
+            LLVMPPCFP128Type()
+        };
+
+        FloatTypeRef::Ref(rf)
+    }
+}
+
 pub mod ffi {
     use ::Bool;
     use core::*;
@@ -249,5 +375,48 @@ pub mod ffi {
         pub fn LLVMIntType(NumBits: c_uint) -> TypeRef;
 
         pub fn LLVMGetIntTypeWidth(IntegerTy: TypeRef) -> c_uint;
+
+        /**
+         * Obtain a 16-bit floating point type from a context.
+         */
+        pub fn LLVMHalfTypeInContext(C: ContextRef) -> TypeRef;
+
+        /**
+         * Obtain a 32-bit floating point type from a context.
+         */
+        pub fn LLVMFloatTypeInContext(C: ContextRef) -> TypeRef;
+
+        /**
+         * Obtain a 64-bit floating point type from a context.
+         */
+        pub fn LLVMDoubleTypeInContext(C: ContextRef) -> TypeRef;
+
+        /**
+         * Obtain a 80-bit floating point type (X87) from a context.
+         */
+        pub fn LLVMX86FP80TypeInContext(C: ContextRef) -> TypeRef;
+
+        /**
+         * Obtain a 128-bit floating point type (112-bit mantissa) from a
+         * context.
+         */
+        pub fn LLVMFP128TypeInContext(C: ContextRef) -> TypeRef;
+
+        /**
+         * Obtain a 128-bit floating point type (two 64-bits) from a context.
+         */
+        pub fn LLVMPPCFP128TypeInContext(C: ContextRef) -> TypeRef;
+
+        /**
+         * Obtain a floating point type from the global context.
+         *
+         * These map to the functions in this group of the same name.
+         */
+        pub fn LLVMHalfType() -> TypeRef;
+        pub fn LLVMFloatType() -> TypeRef;
+        pub fn LLVMDoubleType() -> TypeRef;
+        pub fn LLVMX86FP80Type() -> TypeRef;
+        pub fn LLVMFP128Type() -> TypeRef;
+        pub fn LLVMPPCFP128Type() -> TypeRef;
     }
 }
