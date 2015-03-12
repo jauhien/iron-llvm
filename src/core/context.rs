@@ -56,7 +56,7 @@ impl Context {
 
 impl Drop for Context {
     fn drop(&mut self) {
-        if !self.owned {
+        if self.owned {
             unsafe {
                 LLVMContextDispose(self.context);
             }
