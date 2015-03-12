@@ -13,7 +13,7 @@
 
 use std;
 
-use libc::c_uint;
+use libc::{c_char, c_uint};
 
 use core;
 use core::{context, TypeKind, TypeRef};
@@ -64,12 +64,12 @@ impl Type for TypeRef {
 }
 
 pub trait IntType : Type{
-    fn int1_type_in_context(ctx: context::Context) -> Self;
-    fn int8_type_in_context(ctx: context::Context) -> Self;
-    fn int16_type_in_context(ctx: context::Context) -> Self;
-    fn int32_type_in_context(ctx: context::Context) -> Self;
-    fn int64_type_in_context(ctx: context::Context) -> Self;
-    fn int_type_in_context(ctx: context::Context, num_bits: u32) -> Self;
+    fn int1_type_in_context(ctx: &context::Context) -> Self;
+    fn int8_type_in_context(ctx: &context::Context) -> Self;
+    fn int16_type_in_context(ctx: &context::Context) -> Self;
+    fn int32_type_in_context(ctx: &context::Context) -> Self;
+    fn int64_type_in_context(ctx: &context::Context) -> Self;
+    fn int_type_in_context(ctx: &context::Context, num_bits: u32) -> Self;
 
     fn int1_type() -> Self;
     fn int8_type() -> Self;
@@ -94,7 +94,7 @@ impl Type for IntTypeRef {
 }
 
 impl IntType for IntTypeRef {
-    fn int1_type_in_context(ctx: context::Context) -> IntTypeRef {
+    fn int1_type_in_context(ctx: &context::Context) -> IntTypeRef {
         let rf = unsafe {
             LLVMInt1TypeInContext(ctx.get_ref())
         };
@@ -102,7 +102,7 @@ impl IntType for IntTypeRef {
         IntTypeRef::Ref(rf)
     }
 
-    fn int8_type_in_context(ctx: context::Context) -> IntTypeRef {
+    fn int8_type_in_context(ctx: &context::Context) -> IntTypeRef {
         let rf = unsafe {
             LLVMInt8TypeInContext(ctx.get_ref())
         };
@@ -110,7 +110,7 @@ impl IntType for IntTypeRef {
         IntTypeRef::Ref(rf)
     }
 
-    fn int16_type_in_context(ctx: context::Context) -> IntTypeRef {
+    fn int16_type_in_context(ctx: &context::Context) -> IntTypeRef {
         let rf = unsafe {
             LLVMInt16TypeInContext(ctx.get_ref())
         };
@@ -118,7 +118,7 @@ impl IntType for IntTypeRef {
         IntTypeRef::Ref(rf)
     }
 
-    fn int32_type_in_context(ctx: context::Context) -> IntTypeRef {
+    fn int32_type_in_context(ctx: &context::Context) -> IntTypeRef {
         let rf = unsafe {
             LLVMInt32TypeInContext(ctx.get_ref())
         };
@@ -126,7 +126,7 @@ impl IntType for IntTypeRef {
         IntTypeRef::Ref(rf)
     }
 
-    fn int64_type_in_context(ctx: context::Context) -> IntTypeRef {
+    fn int64_type_in_context(ctx: &context::Context) -> IntTypeRef {
         let rf = unsafe {
             LLVMInt64TypeInContext(ctx.get_ref())
         };
@@ -134,7 +134,7 @@ impl IntType for IntTypeRef {
         IntTypeRef::Ref(rf)
     }
 
-    fn int_type_in_context(ctx: context::Context, num_bits: u32) -> IntTypeRef {
+    fn int_type_in_context(ctx: &context::Context, num_bits: u32) -> IntTypeRef {
         let rf = unsafe {
             LLVMIntTypeInContext(ctx.get_ref(), num_bits)
         };
@@ -198,12 +198,12 @@ impl IntType for IntTypeRef {
 }
 
 pub trait FloatType : Type {
-    fn half_type_in_context(ctx: context::Context) -> Self;
-    fn float_type_in_context(ctx: context::Context) -> Self;
-    fn double_type_in_context(ctx: context::Context) -> Self;
-    fn x86fp80_type_in_context(ctx: context::Context) -> Self;
-    fn fp128_type_in_context(ctx: context::Context) -> Self;
-    fn ppcfp128_type_in_context(ctx: context::Context) -> Self;
+    fn half_type_in_context(ctx: &context::Context) -> Self;
+    fn float_type_in_context(ctx: &context::Context) -> Self;
+    fn double_type_in_context(ctx: &context::Context) -> Self;
+    fn x86fp80_type_in_context(ctx: &context::Context) -> Self;
+    fn fp128_type_in_context(ctx: &context::Context) -> Self;
+    fn ppcfp128_type_in_context(ctx: &context::Context) -> Self;
 
     fn half_type() -> Self;
     fn float_type() -> Self;
@@ -226,7 +226,7 @@ impl Type for FloatTypeRef {
 }
 
 impl FloatType for FloatTypeRef {
-    fn half_type_in_context(ctx: context::Context) -> Self {
+    fn half_type_in_context(ctx: &context::Context) -> Self {
         let rf = unsafe {
             LLVMHalfTypeInContext(ctx.get_ref())
         };
@@ -234,7 +234,7 @@ impl FloatType for FloatTypeRef {
         FloatTypeRef::Ref(rf)
     }
 
-    fn float_type_in_context(ctx: context::Context) -> Self {
+    fn float_type_in_context(ctx: &context::Context) -> Self {
         let rf = unsafe {
             LLVMFloatTypeInContext(ctx.get_ref())
         };
@@ -242,7 +242,7 @@ impl FloatType for FloatTypeRef {
         FloatTypeRef::Ref(rf)
     }
 
-    fn double_type_in_context(ctx: context::Context) -> Self {
+    fn double_type_in_context(ctx: &context::Context) -> Self {
         let rf = unsafe {
             LLVMDoubleTypeInContext(ctx.get_ref())
         };
@@ -250,7 +250,7 @@ impl FloatType for FloatTypeRef {
         FloatTypeRef::Ref(rf)
     }
 
-    fn x86fp80_type_in_context(ctx: context::Context) -> Self {
+    fn x86fp80_type_in_context(ctx: &context::Context) -> Self {
         let rf = unsafe {
             LLVMX86FP80TypeInContext(ctx.get_ref())
         };
@@ -258,7 +258,7 @@ impl FloatType for FloatTypeRef {
         FloatTypeRef::Ref(rf)
     }
 
-    fn fp128_type_in_context(ctx: context::Context) -> Self {
+    fn fp128_type_in_context(ctx: &context::Context) -> Self {
         let rf = unsafe {
             LLVMFP128TypeInContext(ctx.get_ref())
         };
@@ -266,7 +266,7 @@ impl FloatType for FloatTypeRef {
         FloatTypeRef::Ref(rf)
     }
 
-    fn ppcfp128_type_in_context(ctx: context::Context) -> Self{
+    fn ppcfp128_type_in_context(ctx: &context::Context) -> Self{
         let rf = unsafe {
             LLVMPPCFP128TypeInContext(ctx.get_ref())
         };
@@ -381,6 +381,107 @@ impl FunctionType for FunctionTypeRef {
             std::mem::forget(buf);
             LLVMGetParamTypes(self.get_ref(), p);
             Vec::from_raw_parts(p, params_count as usize, params_count as usize)
+        }
+    }
+}
+
+pub trait StructType : Type {
+    fn struct_type_in_context(ctx: &context::Context, element_types: &[TypeRef], packed: bool) -> Self;
+    fn struct_type(element_types: &[TypeRef], packed: bool) -> Self;
+    fn struct_create_named(ctx: &context::Context, name: &str) -> Self;
+    fn get_name(&self) -> String;
+    fn set_body(&self, element_types: &[TypeRef], packed: bool);
+    fn count_element_types(&self) -> u32;
+    fn get_element_types(&self) -> Vec<TypeRef>;
+    fn is_packed(&self) -> bool;
+    fn is_opaque(&self) -> bool;
+}
+
+pub enum StructTypeRef {
+    Ref(TypeRef)
+}
+
+impl Type for StructTypeRef {
+    fn get_ref(&self) -> TypeRef {
+        match *self {
+            StructTypeRef::Ref(rf) => rf
+        }
+    }
+}
+
+impl StructType for StructTypeRef {
+    fn struct_type_in_context(ctx: &context::Context, element_types: &[TypeRef], packed: bool) -> StructTypeRef {
+        let rf = unsafe {
+            LLVMStructTypeInContext(ctx.get_ref(),
+                                    element_types.as_ptr(),
+                                    element_types.len() as c_uint,
+                                    packed as ::Bool)
+        };
+
+        StructTypeRef::Ref(rf)
+    }
+
+    fn struct_type(element_types: &[TypeRef], packed: bool) -> StructTypeRef {
+        let rf = unsafe {
+            LLVMStructType(element_types.as_ptr(),
+                           element_types.len() as c_uint,
+                           packed as ::Bool)
+        };
+
+        StructTypeRef::Ref(rf)
+    }
+
+    fn struct_create_named(ctx: &context::Context, name: &str) -> StructTypeRef {
+        let rf = unsafe {
+            LLVMStructCreateNamed(ctx.get_ref(),
+                                  name.as_ptr() as *const c_char)
+        };
+
+        StructTypeRef::Ref(rf)
+    }
+
+    fn get_name(&self) -> String {
+        let buf = unsafe {
+            std::ffi::CStr::from_ptr(LLVMGetStructName(self.get_ref()))
+        };
+        String::from_utf8_lossy(buf.to_bytes()).into_owned()
+    }
+
+    fn set_body(&self, element_types: &[TypeRef], packed: bool) {
+        unsafe {
+            LLVMStructSetBody(self.get_ref(),
+                              element_types.as_ptr(),
+                              element_types.len() as c_uint,
+                              packed as ::Bool)
+        }
+    }
+
+    fn count_element_types(&self) -> u32 {
+        unsafe {
+            LLVMCountStructElementTypes(self.get_ref())
+        }
+    }
+
+    fn get_element_types(&self) -> Vec<TypeRef> {
+        let element_count = self.count_element_types();
+        let mut buf : Vec<TypeRef> = Vec::with_capacity(element_count as usize);
+        let p = buf.as_mut_ptr();
+        unsafe {
+            std::mem::forget(buf);
+            LLVMGetStructElementTypes(self.get_ref(), p);
+            Vec::from_raw_parts(p, element_count as usize, element_count as usize)
+        }
+    }
+
+    fn is_packed(&self) -> bool {
+        unsafe {
+            LLVMIsPackedStruct(self.get_ref()) > 0
+        }
+    }
+
+    fn is_opaque(&self) -> bool {
+        unsafe {
+            LLVMIsOpaqueStruct(self.get_ref()) > 0
         }
     }
 }
@@ -524,5 +625,76 @@ pub mod ffi {
          * @param Dest Memory address of an array to be filled with result.
          */
         pub fn LLVMGetParamTypes(FunctionTy: TypeRef, Dest: *mut TypeRef);
+
+
+        /* Operations on struct types */
+
+        /**
+         * Create a new structure type in a context.
+         *
+         * A structure is specified by a list of inner elements/types and
+         * whether these can be packed together.
+         */
+        pub fn LLVMStructTypeInContext(C: ContextRef,
+                                       ElementTypes: *const TypeRef,
+                                       ElementCount: c_uint,
+                                       Packed: Bool)
+                                       -> TypeRef;
+
+        /**
+         * Create a new structure type in the global context.
+         */
+        pub fn LLVMStructType(ElementTypes: *const TypeRef,
+                              ElementCount: c_uint,
+                              Packed: Bool)
+                              -> TypeRef;
+
+        /**
+         * Create an empty structure in a context having a specified name.
+         */
+        pub fn LLVMStructCreateNamed(C: ContextRef,
+                                     Name: *const c_char)
+                                     -> TypeRef;
+
+        /**
+         * Obtain the name of a structure.
+         */
+        pub fn LLVMGetStructName(StructTy: TypeRef) -> *const c_char;
+
+        /**
+         * Set the contents of a structure type.
+         */
+        pub fn LLVMStructSetBody(StructTy: TypeRef,
+                                 ElementTypes: *const TypeRef,
+                                 ElementCount: c_uint,
+                                 Packed: Bool);
+
+        /**
+         * Get the number of elements defined inside the structure.
+         */
+        pub fn LLVMCountStructElementTypes(StructTy: TypeRef) -> c_uint;
+
+        /**
+         * Get the elements within a structure.
+         *
+         * The function is passed the address of a pre-allocated array of
+         * LLVMTypeRef at least LLVMCountStructElementTypes() long. After
+         * invocation, this array will be populated with the structure's
+         * elements. The objects in the destination array will have a lifetime
+         * of the structure type itself, which is the lifetime of the context it
+         * is contained in.
+         */
+        pub fn LLVMGetStructElementTypes(StructTy: TypeRef,
+                                         Dest: *mut TypeRef);
+
+        /**
+         * Determine whether a structure is packed.
+         */
+        pub fn LLVMIsPackedStruct(StructTy: TypeRef) -> Bool;
+
+        /**
+         * Determine whether a structure is opaque.
+         */
+        pub fn LLVMIsOpaqueStruct(StructTy: TypeRef) -> Bool;
     }
 }

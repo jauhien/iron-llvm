@@ -20,7 +20,7 @@ use std::io::Write;
 use libc::c_uint;
 
 use core::*;
-use core::types::{Type, IntType, FunctionType};
+use core::types::{Type, IntType, FunctionType, StructType};
 
 pub mod core;
 
@@ -93,4 +93,26 @@ fn it_works() {
     writeln!(&mut stderr, "========").unwrap();
     writeln!(&mut stderr, "").unwrap();
 
+    let struct1 = types::StructTypeRef::struct_create_named(&gc1, "testing");
+    writeln!(&mut stderr, "").unwrap();
+    writeln!(&mut stderr, "========").unwrap();
+    writeln!(&mut stderr, "Testing struct type").unwrap();
+    writeln!(&mut stderr, "string rep: {:?}", struct1.print_to_string()).unwrap();
+    writeln!(&mut stderr, "name: {:?}", struct1.get_name()).unwrap();
+    writeln!(&mut stderr, "is opaque: {:?}", struct1.is_opaque()).unwrap();
+    writeln!(&mut stderr, "setting body...").unwrap();
+
+    struct1.set_body(args.as_slice(), false);
+
+    writeln!(&mut stderr, "string rep: {:?}", struct1.print_to_string()).unwrap();
+    writeln!(&mut stderr, "is opaque: {:?}", struct1.is_opaque()).unwrap();
+    writeln!(&mut stderr, "count of elements: {:?}", struct1.count_element_types()).unwrap();
+
+    let elements = struct1.get_element_types();
+    for element in elements {
+        writeln!(&mut stderr, "  element type: {:?}", element.print_to_string()).unwrap();
+    }
+
+    writeln!(&mut stderr, "========").unwrap();
+    writeln!(&mut stderr, "").unwrap();
 }
