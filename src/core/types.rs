@@ -602,6 +602,111 @@ impl VectorType for VectorTypeRef {
     }
 }
 
+pub trait VoidType {
+    fn void_type_in_context(ctx: &context::Context) -> Self;
+    fn void_type() -> Self;
+}
+
+pub trait LabelType {
+    fn label_type_in_context(ctx: &context::Context) -> Self;
+    fn label_type() -> Self;
+}
+
+pub trait X86MMXType {
+    fn x86mmx_type_in_context(ctx: &context::Context) -> Self;
+    fn x86mmx_type() -> Self;
+}
+
+pub enum VoidTypeRef {
+    Ref(TypeRef)
+}
+
+impl Type for VoidTypeRef {
+    fn get_ref(&self) -> TypeRef {
+        match *self {
+            VoidTypeRef::Ref(rf) => rf
+        }
+    }
+}
+
+pub enum LabelTypeRef {
+    Ref(TypeRef)
+}
+
+impl Type for LabelTypeRef {
+    fn get_ref(&self) -> TypeRef {
+        match *self {
+            LabelTypeRef::Ref(rf) => rf
+        }
+    }
+}
+
+pub enum X86MMXTypeRef {
+    Ref(TypeRef)
+}
+
+impl Type for X86MMXTypeRef {
+    fn get_ref(&self) -> TypeRef {
+        match *self {
+            X86MMXTypeRef::Ref(rf) => rf
+        }
+    }
+}
+
+impl VoidType for VoidTypeRef {
+    fn void_type_in_context(ctx: &context::Context) -> Self {
+        let rf = unsafe {
+            LLVMVoidTypeInContext(ctx.get_ref())
+        };
+
+        VoidTypeRef::Ref(rf)
+    }
+
+    fn void_type() -> Self {
+        let rf = unsafe {
+            LLVMVoidType()
+        };
+
+        VoidTypeRef::Ref(rf)
+    }
+}
+
+impl LabelType for LabelTypeRef {
+    fn label_type_in_context(ctx: &context::Context) -> Self {
+        let rf = unsafe {
+            LLVMLabelTypeInContext(ctx.get_ref())
+        };
+
+        LabelTypeRef::Ref(rf)
+    }
+
+    fn label_type() -> Self {
+        let rf = unsafe {
+            LLVMLabelType()
+        };
+
+        LabelTypeRef::Ref(rf)
+    }
+}
+
+impl X86MMXType for X86MMXTypeRef {
+    fn x86mmx_type_in_context(ctx: &context::Context) -> Self {
+        let rf = unsafe {
+            LLVMX86MMXTypeInContext(ctx.get_ref())
+        };
+
+        X86MMXTypeRef::Ref(rf)
+    }
+
+    fn x86mmx_type() -> Self {
+        let rf = unsafe {
+            LLVMX86MMXType()
+        };
+
+        X86MMXTypeRef::Ref(rf)
+    }
+}
+
 pub mod ffi {
     use ::Bool;
     use core::*;
@@ -872,5 +977,31 @@ pub mod ffi {
          * This only works on types that represent vectors.
          */
         pub fn LLVMGetVectorSize(VectorTy: TypeRef) -> c_uint;
+
+
+        /* Operations on other types */
+
+        /**
+         * Create a void type in a context.
+         */
+        pub fn LLVMVoidTypeInContext(C: ContextRef) -> TypeRef;
+
+        /**
+         * Create a label type in a context.
+         */
+        pub fn LLVMLabelTypeInContext(C: ContextRef) -> TypeRef;
+
+        /**
+         * Create a X86 MMX type in a context.
+         */
+        pub fn LLVMX86MMXTypeInContext(C: ContextRef) -> TypeRef;
+
+        /**
+         * These are similar to the above functions except they operate on the
+         * global context.
+         */
+        pub fn LLVMVoidType() -> TypeRef;
+        pub fn LLVMLabelType() -> TypeRef;
+        pub fn LLVMX86MMXType() -> TypeRef;
     }
 }
