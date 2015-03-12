@@ -13,6 +13,8 @@
 
 use std;
 
+use libc::c_uint;
+
 use core;
 use core::{context, TypeKind, TypeRef};
 use self::ffi::*;
@@ -321,6 +323,68 @@ impl FloatType for FloatTypeRef {
     }
 }
 
+pub trait FunctionType : Type {
+    fn function_type(return_type: &Type, param_types: &[TypeRef], is_var_arg: bool) -> Self;
+    fn is_var_arg(&self) -> bool;
+    fn get_return_type(&self) -> TypeRef;
+    fn count_param_types(&self) -> u32;
+    fn get_param_types(&self) -> Vec<TypeRef>;
+}
+
+pub enum FunctionTypeRef {
+    Ref(TypeRef)
+}
+
+impl Type for FunctionTypeRef {
+    fn get_ref(&self) -> TypeRef {
+        match *self {
+            FunctionTypeRef::Ref(rf) => rf
+        }
+    }
+}
+
+impl FunctionType for FunctionTypeRef {
+    fn function_type(return_type: &Type, param_types: &[TypeRef], is_var_arg: bool) -> FunctionTypeRef {
+        let rf = unsafe {
+            LLVMFunctionType(return_type.get_ref(),
+                             param_types.as_ptr(),
+                             param_types.len() as c_uint,
+                             is_var_arg as ::Bool)
+        };
+
+        FunctionTypeRef::Ref(rf)
+    }
+
+    fn is_var_arg(&self) -> bool {
+        unsafe {
+            LLVMIsFunctionVarArg(self.get_ref()) > 0
+        }
+    }
+
+    fn get_return_type(&self) -> TypeRef {
+        unsafe {
+            LLVMGetReturnType(self.get_ref())
+        }
+    }
+
+    fn count_param_types(&self) -> u32 {
+        unsafe {
+            LLVMCountParamTypes(self.get_ref())
+        }
+    }
+
+    fn get_param_types(&self) -> Vec<TypeRef> {
+        let params_count = self.count_param_types();
+        let mut buf : Vec<TypeRef> = Vec::with_capacity(params_count as usize);
+        let p = buf.as_mut_ptr();
+        unsafe {
+            std::mem::forget(buf);
+            LLVMGetParamTypes(self.get_ref(), p);
+            Vec::from_raw_parts(p, params_count as usize, params_count as usize)
+        }
+    }
+}
+
 pub mod ffi {
     use ::Bool;
     use core::*;
@@ -333,7 +397,7 @@ pub mod ffi {
         /**
          * Whether the type has a known size.
          *
-         * Things that don't have a size are abstract types, labels, and void.a
+         * Things that don't have a size are abstract types, labels, and void.
          */
         pub fn LLVMTypeIsSized(Ty: TypeRef) -> Bool;
 
@@ -418,5 +482,47 @@ pub mod ffi {
         pub fn LLVMX86FP80Type() -> TypeRef;
         pub fn LLVMFP128Type() -> TypeRef;
         pub fn LLVMPPCFP128Type() -> TypeRef;
+
+        /* Operations on function types */
+
+        /**
+         * Obtain a function type consisting of a specified signature.
+         *
+         * The function is defined as a tuple of a return Type, a list of
+         * parameter types, and whether the function is variadic.
+         */
+        pub fn LLVMFunctionType(ReturnType: TypeRef,
+                                ParamTypes: *const TypeRef,
+                                ParamCount: c_uint,
+                                IsVarArg: Bool)
+                                -> TypeRef;
+
+        /**
+         * Returns whether a function type is variadic.
+         */
+        pub fn LLVMIsFunctionVarArg(FunctionTy: TypeRef) -> Bool;
+
+        /**
+         * Obtain the Type this function Type returns.
+         */
+        pub fn LLVMGetReturnType(FunctionTy: TypeRef) -> TypeRef;
+
+        /**
+         * Obtain the number of parameters this function accepts.
+         */
+        pub fn LLVMCountParamTypes(FunctionTy: TypeRef) -> c_uint;
+
+        /**
+         * Obtain the types of a function's parameters.
+         *
+         * The Dest parameter should point to a pre-allocated array of
+         * LLVMTypeRef at least LLVMCountParamTypes() large. On return, the
+         * first LLVMCountParamTypes() entries in the array will be populated
+         * with LLVMTypeRef instances.
+         *
+         * @param FunctionTy The function type to operate on.
+         * @param Dest Memory address of an array to be filled with result.
+         */
+        pub fn LLVMGetParamTypes(FunctionTy: TypeRef, Dest: *mut TypeRef);
     }
 }

@@ -20,7 +20,7 @@ use std::io::Write;
 use libc::c_uint;
 
 use core::*;
-use core::types::{Type, IntType};
+use core::types::{Type, IntType, FunctionType};
 
 pub mod core;
 
@@ -50,7 +50,7 @@ fn it_works() {
         types::ffi::LLVMInt64TypeInContext(gc1.get_ref())
     };
 
-    assert!(ty.get_context().get_ref() == gc1_ref);
+   assert!(ty.get_context().get_ref() == gc1_ref);
 
     let mut stderr = io::stderr();
 
@@ -66,11 +66,31 @@ fn it_works() {
     writeln!(&mut stderr, "========").unwrap();
     writeln!(&mut stderr, "").unwrap();
 
-    let int10 = types::IntTypeRef::int_type_in_context(c1, 10);
+    let int10 = types::IntTypeRef::int_type(10);
     writeln!(&mut stderr, "").unwrap();
     writeln!(&mut stderr, "========").unwrap();
     writeln!(&mut stderr, "Testing int10").unwrap();
     writeln!(&mut stderr, "type width: {:?}", int10.get_width()).unwrap();
     writeln!(&mut stderr, "========").unwrap();
     writeln!(&mut stderr, "").unwrap();
+
+    let args = vec![ty.get_ref(), int10.get_ref()];
+    let func = types::FunctionTypeRef::function_type(&ty, args.as_slice(), false);
+
+    writeln!(&mut stderr, "").unwrap();
+    writeln!(&mut stderr, "========").unwrap();
+    writeln!(&mut stderr, "Testing function type").unwrap();
+    writeln!(&mut stderr, "string rep: {:?}", func.print_to_string()).unwrap();
+    writeln!(&mut stderr, "is var arg: {:?}", func.is_var_arg()).unwrap();
+    writeln!(&mut stderr, "return type: {:?}", func.get_return_type().print_to_string()).unwrap();
+    writeln!(&mut stderr, "number of parameters: {:?}", func.count_param_types()).unwrap();
+
+    let params = func.get_param_types();
+    for param in params {
+        writeln!(&mut stderr, "  param type: {:?}", param.print_to_string()).unwrap();
+    }
+
+    writeln!(&mut stderr, "========").unwrap();
+    writeln!(&mut stderr, "").unwrap();
+
 }
