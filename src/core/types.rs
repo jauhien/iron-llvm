@@ -486,6 +486,122 @@ impl StructType for StructTypeRef {
     }
 }
 
+pub trait SequentialType : Type {
+    fn get_element_type(&self) -> TypeRef {
+        unsafe {
+            LLVMGetElementType(self.get_ref())
+        }
+    }
+}
+
+pub trait ArrayType : SequentialType {
+    fn array_type(element_type: &Type, element_count: u32) -> Self;
+    fn get_length(&self) -> u32;
+}
+
+pub trait PointerType : SequentialType {
+    fn pointer_type(element_type: &Type, address_space: u32) -> Self;
+    fn get_address_space(&self) -> u32;
+}
+
+pub trait VectorType : SequentialType {
+    fn vector_type(element_type: &Type, element_count: u32) -> Self;
+    fn get_size(&self) -> u32;
+}
+
+pub enum ArrayTypeRef {
+    Ref(TypeRef)
+}
+
+impl Type for ArrayTypeRef {
+    fn get_ref(&self) -> TypeRef {
+        match *self {
+            ArrayTypeRef::Ref(rf) => rf
+        }
+    }
+}
+
+impl SequentialType for ArrayTypeRef {}
+
+pub enum PointerTypeRef {
+    Ref(TypeRef)
+}
+
+impl Type for PointerTypeRef {
+    fn get_ref(&self) -> TypeRef {
+        match *self {
+            PointerTypeRef::Ref(rf) => rf
+        }
+    }
+}
+
+impl SequentialType for PointerTypeRef {}
+
+pub enum VectorTypeRef {
+    Ref(TypeRef)
+}
+
+impl Type for VectorTypeRef {
+    fn get_ref(&self) -> TypeRef {
+        match *self {
+            VectorTypeRef::Ref(rf) => rf
+        }
+    }
+}
+
+impl SequentialType for VectorTypeRef {}
+
+impl ArrayType for ArrayTypeRef {
+    fn array_type(element_type: &Type, element_count: u32) -> Self {
+        let rf = unsafe {
+            LLVMArrayType(element_type.get_ref(),
+                          element_count)
+        };
+
+        ArrayTypeRef::Ref(rf)
+    }
+
+    fn get_length(&self) -> u32 {
+        unsafe {
+            LLVMGetArrayLength(self.get_ref())
+        }
+    }
+}
+
+impl PointerType for PointerTypeRef {
+    fn pointer_type(element_type: &Type, address_space: u32) -> Self {
+        let rf = unsafe {
+            LLVMPointerType(element_type.get_ref(),
+                            address_space)
+        };
+
+        PointerTypeRef::Ref(rf)
+    }
+
+    fn get_address_space(&self) -> u32 {
+        unsafe {
+            LLVMGetPointerAddressSpace(self.get_ref())
+        }
+    }
+}
+
+impl VectorType for VectorTypeRef {
+    fn vector_type(element_type: &Type, element_count: u32) -> Self {
+        let rf = unsafe {
+            LLVMVectorType(element_type.get_ref(),
+                           element_count)
+        };
+
+        VectorTypeRef::Ref(rf)
+    }
+
+    fn get_size(&self) -> u32 {
+        unsafe {
+            LLVMGetVectorSize(self.get_ref())
+        }
+    }
+}
+
 pub mod ffi {
     use ::Bool;
     use core::*;
@@ -696,5 +812,65 @@ pub mod ffi {
          * Determine whether a structure is opaque.
          */
         pub fn LLVMIsOpaqueStruct(StructTy: TypeRef) -> Bool;
+
+
+        /* Operations on array, pointer, and vector types (sequence types) */
+
+
+        /**
+         * Obtain the type of elements within a sequential type.
+         *
+         * This works on array, vector, and pointer types.
+         */
+        pub fn LLVMGetElementType(Ty: TypeRef) -> TypeRef;
+
+        /**
+         * Create a fixed size array type that refers to a specific type.
+         *
+         * The created type will exist in the context that its element type
+         * exists in.
+         */
+        pub fn LLVMArrayType(ElementType: TypeRef, ElementCount: c_uint)
+                             -> TypeRef;
+
+        /**
+         * Obtain the length of an array type.
+         *
+         * This only works on types that represent arrays.
+         */
+        pub fn LLVMGetArrayLength(ArrayTy: TypeRef) -> c_uint;
+
+        /**
+         * Create a pointer type that points to a defined type.
+         *
+         * The created type will exist in the context that its pointee type
+         * exists in.
+         */
+        pub fn LLVMPointerType(ElementType: TypeRef, AddressSpace: c_uint)
+                               -> TypeRef;
+
+        /**
+         * Obtain the address space of a pointer type.
+         *
+         * This only works on types that represent pointers.
+         */
+        pub fn LLVMGetPointerAddressSpace(PointerTy: TypeRef) -> c_uint;
+
+        /**
+         * Create a vector type that contains a defined type and has a specific
+         * number of elements.
+         *
+         * The created type will exist in the context thats its element type
+         * exists in.
+         */
+        pub fn LLVMVectorType(ElementType: TypeRef, ElementCount: c_uint)
+                              -> TypeRef;
+
+        /**
+         * Obtain the number of elements in a vector type.
+         *
+         * This only works on types that represent vectors.
+         */
+        pub fn LLVMGetVectorSize(VectorTy: TypeRef) -> c_uint;
     }
 }
