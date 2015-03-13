@@ -14,7 +14,7 @@
 use std;
 
 use core;
-use core::{TypeRef, ValueRef};
+use core::{TypeRef, ValueRef, UseRef};
 use self::ffi::*;
 
 pub trait Value {
@@ -72,11 +72,77 @@ pub trait Value {
             LLVMIsUndef(self.get_ref()) > 0
         }
     }
+
+    fn use_iter(&self) -> UseIter {
+        let first = unsafe {
+            LLVMGetFirstUse(self.get_ref())
+        };
+
+        let current = if first.is_null() {
+            None
+        } else {
+            Some(first)
+        };
+
+        UseIter{current: current}
+    }
 }
 
 impl Value for ValueRef {
     fn get_ref(&self) -> ValueRef {
         *self
+    }
+}
+
+pub trait Use {
+    fn get_ref(&self) -> UseRef;
+
+    fn get_user(&self) -> ValueRef {
+        unsafe {
+            LLVMGetUser(self.get_ref())
+        }
+    }
+
+    fn get_used_value(&self) -> ValueRef {
+        unsafe {
+            LLVMGetUsedValue(self.get_ref())
+        }
+    }
+}
+
+impl Use for UseRef {
+    fn get_ref(&self) -> UseRef {
+        *self
+    }
+}
+
+pub struct UseIter {
+    current: Option<UseRef>
+}
+
+impl Iterator for UseIter {
+    type Item = UseRef;
+
+    fn next(&mut self) -> Option<UseRef> {
+        match self.current {
+            Some(cur) => {
+                let next = unsafe {
+                    LLVMGetNextUse(cur)
+                };
+                self.current = if next.is_null() {
+                    None
+                } else {
+                    Some(next)
+                };
+
+                self.current
+            },
+            None => None
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        return (0, None)
     }
 }
 
@@ -129,5 +195,38 @@ pub mod ffi {
          * Determine whether a value instance is undefined.
          */
         pub fn LLVMIsUndef(Val: ValueRef) -> Bool;
+
+
+        /* Operations on Uses */
+
+        /**
+         * Obtain the first use of a value.
+         *
+         * Uses are obtained in an iterator fashion. First, call this function
+         * to obtain a reference to the first use. Then, call LLVMGetNextUse()
+         * on that instance and all subsequently obtained instances until
+         * LLVMGetNextUse() returns NULL.
+         */
+        pub fn LLVMGetFirstUse(Val: ValueRef) -> UseRef;
+
+        /**
+         * Obtain the next use of a value.
+         *
+         * This effectively advances the iterator. It returns NULL if you are on
+         * the final use and no more are available.
+         */
+        pub fn LLVMGetNextUse(U: UseRef) -> UseRef;
+
+        /**
+         * Obtain the user value for a user.
+         *
+         * The returned value corresponds to a llvm::User type.
+         */
+        pub fn LLVMGetUser(U: UseRef) -> ValueRef;
+
+        /**
+         * Obtain the value this use corresponds to.
+         */
+        pub fn LLVMGetUsedValue(U: UseRef) -> ValueRef;
     }
 }
