@@ -189,6 +189,68 @@ pub trait User : Value {
 
 impl User for UserRef {}
 
+pub trait Const : User {
+    fn const_null(ty: &core::types::Type) -> Self;
+    fn const_all_ones(ty: &core::types::IntType) -> Self;
+    fn get_undef(ty: &core::types::Type) -> Self;
+    fn const_pointer_null(ty: &core::types::Type) -> Self;
+
+    fn is_null(&self) -> bool {
+        unsafe {
+            LLVMIsNull(self.get_ref()) > 0
+        }
+    }
+}
+
+pub enum ConstRef {
+    Ref(ValueRef)
+}
+
+impl Value for ConstRef {
+    fn get_ref(&self) -> ValueRef {
+        match *self {
+            ConstRef::Ref(rf) => rf
+        }
+    }
+}
+
+impl User for ConstRef {}
+
+impl Const for ConstRef {
+    fn const_null(ty: &core::types::Type) -> ConstRef {
+        let rf = unsafe {
+            LLVMConstNull(ty.get_ref())
+        };
+
+        ConstRef::Ref(rf)
+    }
+
+    fn const_all_ones(ty: &core::types::IntType) -> ConstRef {
+        let rf = unsafe {
+            LLVMConstAllOnes(ty.get_ref())
+        };
+
+        ConstRef::Ref(rf)
+
+    }
+
+    fn get_undef(ty: &core::types::Type) -> ConstRef {
+        let rf = unsafe {
+            LLVMGetUndef(ty.get_ref())
+        };
+
+        ConstRef::Ref(rf)
+    }
+
+    fn const_pointer_null(ty: &core::types::Type) -> ConstRef {
+        let rf = unsafe {
+            LLVMConstPointerNull(ty.get_ref())
+        };
+
+        ConstRef::Ref(rf)
+    }
+}
+
 pub mod ffi {
     use ::Bool;
     use core::*;
@@ -294,5 +356,37 @@ pub mod ffi {
          * Obtain the number of operands in a llvm::User value.
          */
         pub fn LLVMGetNumOperands(Val: ValueRef) -> c_int;
+
+
+        /* Operations on constants of any type */
+
+        /**
+         * Obtain a constant value referring to the null instance of a type.
+         */
+        pub fn LLVMConstNull(Ty: TypeRef) -> ValueRef;
+
+        /**
+         * Obtain a constant value referring to the instance of a type
+         * consisting of all ones.
+         *
+         * This is only valid for integer types.
+         */
+        pub fn LLVMConstAllOnes(Ty: TypeRef) -> ValueRef;
+
+        /**
+         * Obtain a constant value referring to an undefined value of a type.
+         */
+        pub fn LLVMGetUndef(Ty: TypeRef) -> ValueRef;
+
+        /**
+         * Determine whether a value instance is null.
+         */
+        pub fn LLVMIsNull(Val: ValueRef) -> Bool;
+
+        /**
+         * Obtain a constant that is a constant pointer pointing to NULL for a
+         * specified type.
+         */
+        pub fn LLVMConstPointerNull(Ty: TypeRef) -> ValueRef;
     }
 }
