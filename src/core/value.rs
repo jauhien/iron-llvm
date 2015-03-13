@@ -97,9 +97,9 @@ impl Value for ValueRef {
 pub trait Use {
     fn get_ref(&self) -> UseRef;
 
-    fn get_user(&self) -> ValueRef {
+    fn get_user(&self) -> UserRef {
         unsafe {
-            LLVMGetUser(self.get_ref())
+            UserRef::Ref(LLVMGetUser(self.get_ref()))
         }
     }
 
@@ -146,10 +146,53 @@ impl Iterator for UseIter {
     }
 }
 
+
+// TODO: implement iterator and some better indexing for User
+
+pub enum UserRef {
+    Ref(ValueRef)
+}
+
+impl Value for UserRef {
+    fn get_ref(&self) -> ValueRef {
+        match *self {
+            UserRef::Ref(rf) => rf
+        }
+    }
+}
+
+pub trait User : Value {
+    fn get_operand(&self, index: u32) -> ValueRef {
+        unsafe {
+            LLVMGetOperand(self.get_ref(), index)
+        }
+    }
+
+    fn get_operand_use(&self, index: u32) -> UseRef {
+        unsafe {
+            LLVMGetOperandUse(self.get_ref(), index)
+        }
+    }
+
+    fn set_operand(&self, index: u32, op: &Value) {
+        unsafe {
+            LLVMSetOperand(self.get_ref(), index, op.get_ref())
+        }
+    }
+
+    fn get_num_operands(&self) -> i32 {
+        unsafe {
+            LLVMGetNumOperands(self.get_ref())
+        }
+    }
+}
+
+impl User for UserRef {}
+
 pub mod ffi {
     use ::Bool;
     use core::*;
-    use libc::{c_char, c_uint};
+    use libc::{c_char, c_int, c_uint};
 
     #[link(name = "LLVMCore")]
     extern {
@@ -228,5 +271,28 @@ pub mod ffi {
          * Obtain the value this use corresponds to.
          */
         pub fn LLVMGetUsedValue(U: UseRef) -> ValueRef;
+
+
+        /* Operations on Users */
+
+        /**
+         * Obtain an operand at a specific index in a llvm::User value.
+         */
+        pub fn LLVMGetOperand(Val: ValueRef, Index: c_uint) -> ValueRef;
+
+        /**
+         * Obtain the use of an operand at a specific index in a llvm::User value.
+         */
+        pub fn LLVMGetOperandUse(Val: ValueRef, Index: c_uint) -> UseRef;
+
+        /**
+         * Set an operand at a specific index in a llvm::User value.
+         */
+        pub fn LLVMSetOperand(Val: ValueRef, Index: c_uint, Op: ValueRef);
+
+        /**
+         * Obtain the number of operands in a llvm::User value.
+         */
+        pub fn LLVMGetNumOperands(Val: ValueRef) -> c_int;
     }
 }
