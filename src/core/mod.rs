@@ -18,6 +18,7 @@ use libc::c_void;
 
 pub mod context;
 pub mod types;
+pub mod value;
 
 // Core LLVM Types and Enumerations, code taken mostly from the Rust
 // Project (src/librustc_llvm/lib.rs)
