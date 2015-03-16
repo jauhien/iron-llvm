@@ -13,22 +13,23 @@
 
 use std;
 
+use ::{LLVMRef, LLVMRefCtor};
 use core;
 use core::{TypeRef, ValueRef, UseRef};
 use self::ffi::*;
 
-pub trait Value {
-    fn get_ref(&self) -> ValueRef;
+pub trait ValueCtor : LLVMRefCtor<ValueRef> {}
 
-    fn type_of(&self) -> TypeRef {
+pub trait Value : LLVMRef<ValueRef> {
+    fn get_type(&self) -> TypeRef {
         unsafe {
-            LLVMTypeOf(self.get_ref())
+            LLVMTypeOf(self.to_ref())
         }
     }
 
     fn get_name(&self) -> String {
         let buf = unsafe {
-            std::ffi::CStr::from_ptr(LLVMGetValueName(self.get_ref()))
+            std::ffi::CStr::from_ptr(LLVMGetValueName(self.to_ref()))
         };
         let result = String::from_utf8_lossy(buf.to_bytes()).into_owned();
         result
@@ -36,19 +37,19 @@ pub trait Value {
 
     fn set_name(&self, name: &str) {
         unsafe {
-            LLVMSetValueName(self.get_ref(), name.as_ptr() as *const i8)
+            LLVMSetValueName(self.to_ref(), name.as_ptr() as *const i8)
         }
     }
 
     fn dump(&self) {
         unsafe {
-            LLVMDumpValue(self.get_ref())
+            LLVMDumpValue(self.to_ref())
         }
     }
 
     fn print_to_string(&self) -> String {
         let buf = unsafe {
-            std::ffi::CStr::from_ptr(LLVMPrintValueToString(self.get_ref()))
+            std::ffi::CStr::from_ptr(LLVMPrintValueToString(self.to_ref()))
         };
         let result = String::from_utf8_lossy(buf.to_bytes()).into_owned();
         unsafe { core::ffi::LLVMDisposeMessage(buf.as_ptr()); }
@@ -57,25 +58,25 @@ pub trait Value {
 
     fn replace_all_uses_with(&self, new_val: &Value) {
         unsafe {
-            LLVMReplaceAllUsesWith(self.get_ref(), new_val.get_ref())
+            LLVMReplaceAllUsesWith(self.to_ref(), new_val.to_ref())
         }
     }
 
     fn is_constant(&self) -> bool {
         unsafe {
-            LLVMIsConstant(self.get_ref()) > 0
+            LLVMIsConstant(self.to_ref()) > 0
         }
     }
 
     fn is_undef(&self) -> bool {
         unsafe {
-            LLVMIsUndef(self.get_ref()) > 0
+            LLVMIsUndef(self.to_ref()) > 0
         }
     }
 
     fn use_iter(&self) -> UseIter {
         let first = unsafe {
-            LLVMGetFirstUse(self.get_ref())
+            LLVMGetFirstUse(self.to_ref())
         };
 
         let current = if first.is_null() {
@@ -88,33 +89,51 @@ pub trait Value {
     }
 }
 
-impl Value for ValueRef {
-    fn get_ref(&self) -> ValueRef {
+impl LLVMRef<ValueRef> for ValueRef {
+    fn to_ref(&self) -> ValueRef {
         *self
     }
 }
 
-pub trait Use {
-    fn get_ref(&self) -> UseRef;
+impl LLVMRefCtor<ValueRef> for ValueRef {
+    unsafe fn from_ref(rf: ValueRef) -> ValueRef {
+        rf
+    }
+}
 
+impl Value for ValueRef {}
+impl ValueCtor for ValueRef {}
+
+pub trait UseCtor : LLVMRefCtor<UseRef> {}
+
+pub trait Use : LLVMRef<UseRef> {
     fn get_user(&self) -> UserRef {
         unsafe {
-            UserRef::Ref(LLVMGetUser(self.get_ref()))
+            UserRef::from_ref(LLVMGetUser(self.to_ref()))
         }
     }
 
     fn get_used_value(&self) -> ValueRef {
         unsafe {
-            LLVMGetUsedValue(self.get_ref())
+            LLVMGetUsedValue(self.to_ref())
         }
     }
 }
 
-impl Use for UseRef {
-    fn get_ref(&self) -> UseRef {
+impl LLVMRef<UseRef> for UseRef {
+    fn to_ref(&self) -> UseRef {
         *self
     }
 }
+
+impl LLVMRefCtor<UseRef> for UseRef {
+    unsafe fn from_ref(rf: UseRef) -> UseRef {
+        rf
+    }
+}
+
+impl Use for UseRef {}
+impl UseCtor for UseRef {}
 
 pub struct UseIter {
     current: Option<UseRef>
@@ -149,107 +168,71 @@ impl Iterator for UseIter {
 
 // TODO: implement iterator and some better indexing for User
 
-pub enum UserRef {
-    Ref(ValueRef)
-}
-
-impl Value for UserRef {
-    fn get_ref(&self) -> ValueRef {
-        match *self {
-            UserRef::Ref(rf) => rf
-        }
-    }
-}
-
 pub trait User : Value {
     fn get_operand(&self, index: u32) -> ValueRef {
         unsafe {
-            LLVMGetOperand(self.get_ref(), index)
+            LLVMGetOperand(self.to_ref(), index)
         }
     }
 
     fn get_operand_use(&self, index: u32) -> UseRef {
         unsafe {
-            LLVMGetOperandUse(self.get_ref(), index)
+            UseRef::from_ref(LLVMGetOperandUse(self.to_ref(), index))
         }
     }
 
     fn set_operand(&self, index: u32, op: &Value) {
         unsafe {
-            LLVMSetOperand(self.get_ref(), index, op.get_ref())
+            LLVMSetOperand(self.to_ref(), index, op.to_ref())
         }
     }
 
     fn get_num_operands(&self) -> i32 {
         unsafe {
-            LLVMGetNumOperands(self.get_ref())
+            LLVMGetNumOperands(self.to_ref())
         }
     }
 }
 
-impl User for UserRef {}
+new_ref_type!(UserRef for ValueRef implementing Value);
+
+pub trait ConstCtor<Ty: core::types::Type + ?Sized> : ValueCtor {
+    fn get_null(ty: &Ty) -> Self {
+        unsafe {
+            Self::from_ref(LLVMConstNull(ty.to_ref()))
+        }
+    }
+
+    fn get_undef(ty: &Ty) -> Self {
+        unsafe {
+            Self::from_ref(LLVMGetUndef(ty.to_ref()))
+        }
+    }
+
+    fn get_pointer_null(ty: &Ty) -> Self {
+        unsafe {
+            Self::from_ref(LLVMConstPointerNull(ty.to_ref()))
+        }
+    }
+}
 
 pub trait Const : User {
-    fn const_null(ty: &core::types::Type) -> Self;
-    fn const_all_ones(ty: &core::types::IntType) -> Self;
-    fn get_undef(ty: &core::types::Type) -> Self;
-    fn const_pointer_null(ty: &core::types::Type) -> Self;
-
     fn is_null(&self) -> bool {
         unsafe {
-            LLVMIsNull(self.get_ref()) > 0
+            LLVMIsNull(self.to_ref()) > 0
         }
     }
 }
 
-pub enum ConstRef {
-    Ref(ValueRef)
-}
+new_ref_type!(ConstRef for ValueRef
+              implementing
+              Value,
+              User,
+              Const,
+              ValueCtor,
+              ConstCtor<core::types::Type>
+              );
 
-impl Value for ConstRef {
-    fn get_ref(&self) -> ValueRef {
-        match *self {
-            ConstRef::Ref(rf) => rf
-        }
-    }
-}
-
-impl User for ConstRef {}
-
-impl Const for ConstRef {
-    fn const_null(ty: &core::types::Type) -> ConstRef {
-        let rf = unsafe {
-            LLVMConstNull(ty.get_ref())
-        };
-
-        ConstRef::Ref(rf)
-    }
-
-    fn const_all_ones(ty: &core::types::IntType) -> ConstRef {
-        let rf = unsafe {
-            LLVMConstAllOnes(ty.get_ref())
-        };
-
-        ConstRef::Ref(rf)
-
-    }
-
-    fn get_undef(ty: &core::types::Type) -> ConstRef {
-        let rf = unsafe {
-            LLVMGetUndef(ty.get_ref())
-        };
-
-        ConstRef::Ref(rf)
-    }
-
-    fn const_pointer_null(ty: &core::types::Type) -> ConstRef {
-        let rf = unsafe {
-            LLVMConstPointerNull(ty.get_ref())
-        };
-
-        ConstRef::Ref(rf)
-    }
-}
 
 pub mod ffi {
     use ::Bool;

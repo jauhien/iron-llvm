@@ -14,6 +14,8 @@
 use core::ContextRef;
 use self::ffi::*;
 
+use ::{LLVMRef, LLVMRefCtor};
+
 pub struct Context {
     context: ContextRef,
     owned: bool
@@ -41,16 +43,20 @@ impl Context {
             owned: true
         }
     }
+}
 
-    pub unsafe fn from_ref(context_ref : ContextRef) -> Context {
+impl LLVMRef<ContextRef> for Context {
+    fn to_ref(&self) -> ContextRef {
+        self.context
+    }
+}
+
+impl LLVMRefCtor<ContextRef> for Context {
+    unsafe fn from_ref(context_ref : ContextRef) -> Context {
         Context{
             context: context_ref,
             owned: false
         }
-    }
-
-    pub fn get_ref(&self) -> ContextRef {
-        self.context
     }
 }
 

@@ -15,41 +15,40 @@ use std;
 
 use libc::{c_char, c_uint};
 
+use ::{LLVMRef, LLVMRefCtor};
 use core;
 use core::{context, TypeKind, TypeRef};
 use self::ffi::*;
 
-pub trait Type {
-    fn get_ref(&self) -> TypeRef;
-
+pub trait Type : LLVMRef<TypeRef> {
     fn get_kind(&self) -> TypeKind {
         unsafe {
-            LLVMGetTypeKind(self.get_ref())
+            LLVMGetTypeKind(self.to_ref())
         }
     }
 
     fn is_sized(&self) -> bool {
         unsafe {
-            LLVMTypeIsSized(self.get_ref()) > 0
+            LLVMTypeIsSized(self.to_ref()) > 0
         }
     }
 
     fn get_context(&self) -> context::Context {
         unsafe {
-            let ctx = LLVMGetTypeContext(self.get_ref());
+            let ctx = LLVMGetTypeContext(self.to_ref());
             context::Context::from_ref(ctx)
         }
     }
 
     fn dump(&self) {
         unsafe {
-            LLVMDumpType(self.get_ref());
+            LLVMDumpType(self.to_ref());
         }
     }
 
     fn print_to_string(&self) -> String {
         let buf = unsafe {
-            std::ffi::CStr::from_ptr(LLVMPrintTypeToString(self.get_ref()))
+            std::ffi::CStr::from_ptr(LLVMPrintTypeToString(self.to_ref()))
         };
         let result = String::from_utf8_lossy(buf.to_bytes()).into_owned();
         unsafe { core::ffi::LLVMDisposeMessage(buf.as_ptr()); }
@@ -57,319 +56,213 @@ pub trait Type {
     }
 }
 
-impl Type for TypeRef {
-    fn get_ref(&self) -> TypeRef {
+pub trait TypeCtor : LLVMRefCtor<TypeRef> {}
+
+impl LLVMRef<TypeRef> for TypeRef {
+    fn to_ref(&self) -> TypeRef {
         *self
     }
 }
 
-pub trait IntType : Type{
-    fn int1_type_in_context(ctx: &context::Context) -> Self;
-    fn int8_type_in_context(ctx: &context::Context) -> Self;
-    fn int16_type_in_context(ctx: &context::Context) -> Self;
-    fn int32_type_in_context(ctx: &context::Context) -> Self;
-    fn int64_type_in_context(ctx: &context::Context) -> Self;
-    fn int_type_in_context(ctx: &context::Context, num_bits: u32) -> Self;
-
-    fn int1_type() -> Self;
-    fn int8_type() -> Self;
-    fn int16_type() -> Self;
-    fn int32_type() -> Self;
-    fn int64_type() -> Self;
-    fn int_type(num_bits: u32) -> Self;
-
-    fn get_width(&self) -> u32;
+impl LLVMRefCtor<TypeRef> for TypeRef {
+    unsafe fn from_ref(rf: TypeRef) -> TypeRef {
+        rf
+    }
 }
 
-pub enum IntTypeRef {
-    Ref(TypeRef)
-}
+impl Type for TypeRef {}
+impl TypeCtor for TypeRef {}
 
-impl Type for IntTypeRef {
-    fn get_ref(&self) -> TypeRef {
-        match *self {
-            IntTypeRef::Ref(rf) => rf
+pub trait IntTypeCtor : TypeCtor {
+    fn get_int1_in_context(ctx: &context::Context) -> Self  {
+        unsafe {
+            Self::from_ref(LLVMInt1TypeInContext(ctx.to_ref()))
         }
     }
+
+    fn get_int8_in_context(ctx: &context::Context) -> Self {
+        unsafe {
+            Self::from_ref(LLVMInt8TypeInContext(ctx.to_ref()))
+        }
+    }
+
+    fn get_int16_in_context(ctx: &context::Context) -> Self {
+        unsafe {
+            Self::from_ref(LLVMInt16TypeInContext(ctx.to_ref()))
+        }
+    }
+
+    fn get_int32_in_context(ctx: &context::Context) -> Self {
+        unsafe {
+            Self::from_ref(LLVMInt32TypeInContext(ctx.to_ref()))
+        }
+    }
+
+    fn get_int64_in_context(ctx: &context::Context) -> Self {
+        unsafe {
+            Self::from_ref(LLVMInt64TypeInContext(ctx.to_ref()))
+        }
+    }
+
+    fn get_int_in_context(ctx: &context::Context, num_bits: u32) -> Self {
+        unsafe {
+            Self::from_ref(LLVMIntTypeInContext(ctx.to_ref(), num_bits))
+        }
+    }
+
+    fn get_int1() -> Self {
+        unsafe {
+            Self::from_ref(LLVMInt1Type())
+        }
+    }
+
+    fn get_int8() -> Self {
+        unsafe {
+            Self::from_ref(LLVMInt8Type())
+        }
+    }
+
+    fn get_int16() -> Self {
+        unsafe {
+            Self::from_ref(LLVMInt16Type())
+        }
+    }
+
+    fn get_int32() -> Self {
+        unsafe {
+            Self::from_ref(LLVMInt32Type())
+        }
+    }
+
+    fn get_int64() -> Self {
+        unsafe {
+            Self::from_ref(LLVMInt64Type())
+        }
+    }
+
+    fn get_int(num_bits: u32) -> Self {
+        unsafe {
+            Self::from_ref(LLVMIntType(num_bits))
+        }
+    }
+
 }
 
-impl IntType for IntTypeRef {
-    fn int1_type_in_context(ctx: &context::Context) -> IntTypeRef {
-        let rf = unsafe {
-            LLVMInt1TypeInContext(ctx.get_ref())
-        };
-
-        IntTypeRef::Ref(rf)
-    }
-
-    fn int8_type_in_context(ctx: &context::Context) -> IntTypeRef {
-        let rf = unsafe {
-            LLVMInt8TypeInContext(ctx.get_ref())
-        };
-
-        IntTypeRef::Ref(rf)
-    }
-
-    fn int16_type_in_context(ctx: &context::Context) -> IntTypeRef {
-        let rf = unsafe {
-            LLVMInt16TypeInContext(ctx.get_ref())
-        };
-
-        IntTypeRef::Ref(rf)
-    }
-
-    fn int32_type_in_context(ctx: &context::Context) -> IntTypeRef {
-        let rf = unsafe {
-            LLVMInt32TypeInContext(ctx.get_ref())
-        };
-
-        IntTypeRef::Ref(rf)
-    }
-
-    fn int64_type_in_context(ctx: &context::Context) -> IntTypeRef {
-        let rf = unsafe {
-            LLVMInt64TypeInContext(ctx.get_ref())
-        };
-
-        IntTypeRef::Ref(rf)
-    }
-
-    fn int_type_in_context(ctx: &context::Context, num_bits: u32) -> IntTypeRef {
-        let rf = unsafe {
-            LLVMIntTypeInContext(ctx.get_ref(), num_bits)
-        };
-
-        IntTypeRef::Ref(rf)
-    }
-
-    fn int1_type() -> IntTypeRef {
-        let rf = unsafe {
-            LLVMInt1Type()
-        };
-
-        IntTypeRef::Ref(rf)
-    }
-
-    fn int8_type() -> IntTypeRef {
-        let rf = unsafe {
-            LLVMInt8Type()
-        };
-
-        IntTypeRef::Ref(rf)
-    }
-
-    fn int16_type() -> IntTypeRef {
-        let rf = unsafe {
-            LLVMInt16Type()
-        };
-
-        IntTypeRef::Ref(rf)
-    }
-
-    fn int32_type() -> IntTypeRef {
-        let rf = unsafe {
-            LLVMInt32Type()
-        };
-
-        IntTypeRef::Ref(rf)
-    }
-
-    fn int64_type() -> IntTypeRef {
-        let rf = unsafe {
-            LLVMInt64Type()
-        };
-
-        IntTypeRef::Ref(rf)
-    }
-
-    fn int_type(num_bits: u32) -> IntTypeRef {
-        let rf = unsafe {
-            LLVMIntType(num_bits)
-        };
-
-        IntTypeRef::Ref(rf)
-    }
-
+pub trait IntType : Type {
     fn get_width(&self) -> u32 {
         unsafe {
-            LLVMGetIntTypeWidth(self.get_ref())
+            LLVMGetIntTypeWidth(self.to_ref())
         }
     }
 }
 
-pub trait FloatType : Type {
-    fn half_type_in_context(ctx: &context::Context) -> Self;
-    fn float_type_in_context(ctx: &context::Context) -> Self;
-    fn double_type_in_context(ctx: &context::Context) -> Self;
-    fn x86fp80_type_in_context(ctx: &context::Context) -> Self;
-    fn fp128_type_in_context(ctx: &context::Context) -> Self;
-    fn ppcfp128_type_in_context(ctx: &context::Context) -> Self;
+new_ref_type!(IntTypeRef for TypeRef implementing Type, IntType, TypeCtor, IntTypeCtor);
 
-    fn half_type() -> Self;
-    fn float_type() -> Self;
-    fn double_type() -> Self;
-    fn x86fp80_type() -> Self;
-    fn fp128_type() -> Self;
-    fn ppcfp128_type() -> Self;
-}
+pub trait RealTypeCtor : TypeCtor {
+    fn get_half_in_context(ctx: &context::Context) -> Self {
+        unsafe {
+            Self::from_ref(LLVMHalfTypeInContext(ctx.to_ref()))
+        }
+    }
 
-pub enum FloatTypeRef {
-    Ref(TypeRef)
-}
+    fn get_float_in_context(ctx: &context::Context) -> Self {
+        unsafe {
+            Self::from_ref(LLVMFloatTypeInContext(ctx.to_ref()))
+        }
+    }
 
-impl Type for FloatTypeRef {
-    fn get_ref(&self) -> TypeRef {
-        match *self {
-            FloatTypeRef::Ref(rf) => rf
+    fn get_double_in_context(ctx: &context::Context) -> Self {
+        unsafe {
+            Self::from_ref(LLVMDoubleTypeInContext(ctx.to_ref()))
+        }
+    }
+
+    fn get_x86fp80_in_context(ctx: &context::Context) -> Self {
+        unsafe {
+            Self::from_ref(LLVMX86FP80TypeInContext(ctx.to_ref()))
+        }
+    }
+
+    fn get_fp128_in_context(ctx: &context::Context) -> Self {
+        unsafe {
+            Self::from_ref(LLVMFP128TypeInContext(ctx.to_ref()))
+        }
+    }
+
+    fn get_ppcfp128_in_context(ctx: &context::Context) -> Self{
+        unsafe {
+            Self::from_ref(LLVMPPCFP128TypeInContext(ctx.to_ref()))
+        }
+    }
+
+    fn get_half() -> Self {
+        unsafe {
+            Self::from_ref(LLVMHalfType())
+        }
+    }
+
+    fn get_float() -> Self {
+        unsafe {
+            Self::from_ref(LLVMFloatType())
+        }
+    }
+
+    fn get_double() -> Self {
+        unsafe {
+            Self::from_ref(LLVMDoubleType())
+        }
+    }
+
+    fn get_x86fp80() -> Self {
+        unsafe {
+            Self::from_ref(LLVMX86FP80Type())
+        }
+    }
+
+    fn get_fp128() -> Self {
+        unsafe {
+            Self::from_ref(LLVMFP128Type())
+        }
+    }
+
+    fn get_ppcfp128() -> Self{
+        unsafe {
+            Self::from_ref(LLVMPPCFP128Type())
         }
     }
 }
 
-impl FloatType for FloatTypeRef {
-    fn half_type_in_context(ctx: &context::Context) -> Self {
-        let rf = unsafe {
-            LLVMHalfTypeInContext(ctx.get_ref())
-        };
+pub trait RealType : Type {}
 
-        FloatTypeRef::Ref(rf)
-    }
+new_ref_type!(RealTypeRef for TypeRef implementing Type, RealType, TypeCtor, RealTypeCtor);
 
-    fn float_type_in_context(ctx: &context::Context) -> Self {
-        let rf = unsafe {
-            LLVMFloatTypeInContext(ctx.get_ref())
-        };
-
-        FloatTypeRef::Ref(rf)
-    }
-
-    fn double_type_in_context(ctx: &context::Context) -> Self {
-        let rf = unsafe {
-            LLVMDoubleTypeInContext(ctx.get_ref())
-        };
-
-        FloatTypeRef::Ref(rf)
-    }
-
-    fn x86fp80_type_in_context(ctx: &context::Context) -> Self {
-        let rf = unsafe {
-            LLVMX86FP80TypeInContext(ctx.get_ref())
-        };
-
-        FloatTypeRef::Ref(rf)
-    }
-
-    fn fp128_type_in_context(ctx: &context::Context) -> Self {
-        let rf = unsafe {
-            LLVMFP128TypeInContext(ctx.get_ref())
-        };
-
-        FloatTypeRef::Ref(rf)
-    }
-
-    fn ppcfp128_type_in_context(ctx: &context::Context) -> Self{
-        let rf = unsafe {
-            LLVMPPCFP128TypeInContext(ctx.get_ref())
-        };
-
-        FloatTypeRef::Ref(rf)
-    }
-
-    fn half_type() -> Self {
-        let rf = unsafe {
-            LLVMHalfType()
-        };
-
-        FloatTypeRef::Ref(rf)
-    }
-
-    fn float_type() -> Self {
-        let rf = unsafe {
-            LLVMFloatType()
-        };
-
-        FloatTypeRef::Ref(rf)
-    }
-
-    fn double_type() -> Self {
-        let rf = unsafe {
-            LLVMDoubleType()
-        };
-
-        FloatTypeRef::Ref(rf)
-    }
-
-    fn x86fp80_type() -> Self {
-        let rf = unsafe {
-            LLVMX86FP80Type()
-        };
-
-        FloatTypeRef::Ref(rf)
-    }
-
-    fn fp128_type() -> Self {
-        let rf = unsafe {
-            LLVMFP128Type()
-        };
-
-        FloatTypeRef::Ref(rf)
-    }
-
-    fn ppcfp128_type() -> Self{
-        let rf = unsafe {
-            LLVMPPCFP128Type()
-        };
-
-        FloatTypeRef::Ref(rf)
+pub trait FunctionTypeCtor : TypeCtor {
+    fn get(return_type: &Type, param_types: &[TypeRef], is_var_arg: bool) -> Self {
+        unsafe {
+            Self::from_ref(LLVMFunctionType(return_type.to_ref(),
+                                            param_types.as_ptr(),
+                                            param_types.len() as c_uint,
+                                            is_var_arg as ::Bool))
+        }
     }
 }
 
 pub trait FunctionType : Type {
-    fn function_type(return_type: &Type, param_types: &[TypeRef], is_var_arg: bool) -> Self;
-    fn is_var_arg(&self) -> bool;
-    fn get_return_type(&self) -> TypeRef;
-    fn count_param_types(&self) -> u32;
-    fn get_param_types(&self) -> Vec<TypeRef>;
-}
-
-pub enum FunctionTypeRef {
-    Ref(TypeRef)
-}
-
-impl Type for FunctionTypeRef {
-    fn get_ref(&self) -> TypeRef {
-        match *self {
-            FunctionTypeRef::Ref(rf) => rf
-        }
-    }
-}
-
-impl FunctionType for FunctionTypeRef {
-    fn function_type(return_type: &Type, param_types: &[TypeRef], is_var_arg: bool) -> FunctionTypeRef {
-        let rf = unsafe {
-            LLVMFunctionType(return_type.get_ref(),
-                             param_types.as_ptr(),
-                             param_types.len() as c_uint,
-                             is_var_arg as ::Bool)
-        };
-
-        FunctionTypeRef::Ref(rf)
-    }
-
     fn is_var_arg(&self) -> bool {
         unsafe {
-            LLVMIsFunctionVarArg(self.get_ref()) > 0
+            LLVMIsFunctionVarArg(self.to_ref()) > 0
         }
     }
 
     fn get_return_type(&self) -> TypeRef {
         unsafe {
-            LLVMGetReturnType(self.get_ref())
+            LLVMGetReturnType(self.to_ref())
         }
     }
 
     fn count_param_types(&self) -> u32 {
         unsafe {
-            LLVMCountParamTypes(self.get_ref())
+            LLVMCountParamTypes(self.to_ref())
         }
     }
 
@@ -379,77 +272,51 @@ impl FunctionType for FunctionTypeRef {
         let p = buf.as_mut_ptr();
         unsafe {
             std::mem::forget(buf);
-            LLVMGetParamTypes(self.get_ref(), p);
+            LLVMGetParamTypes(self.to_ref(), p);
             Vec::from_raw_parts(p, params_count as usize, params_count as usize)
         }
     }
 }
 
-pub trait StructType : Type {
-    fn struct_type_in_context(ctx: &context::Context, element_types: &[TypeRef], packed: bool) -> Self;
-    fn struct_type(element_types: &[TypeRef], packed: bool) -> Self;
-    fn struct_create_named(ctx: &context::Context, name: &str) -> Self;
-    fn get_name(&self) -> String;
-    fn set_body(&self, element_types: &[TypeRef], packed: bool);
-    fn count_element_types(&self) -> u32;
-    fn get_element_types(&self) -> Vec<TypeRef>;
-    fn is_packed(&self) -> bool;
-    fn is_opaque(&self) -> bool;
-}
+new_ref_type!(FunctionTypeRef for TypeRef implementing Type, FunctionType, TypeCtor, FunctionTypeCtor);
 
-pub enum StructTypeRef {
-    Ref(TypeRef)
-}
+pub trait StructTypeCtor : TypeCtor {
+    fn get_in_context(ctx: &context::Context, element_types: &[TypeRef], packed: bool) -> Self {
+        unsafe {
+            Self::from_ref(LLVMStructTypeInContext(ctx.to_ref(),
+                                                   element_types.as_ptr(),
+                                                   element_types.len() as c_uint,
+                                                   packed as ::Bool))
+        }
+    }
 
-impl Type for StructTypeRef {
-    fn get_ref(&self) -> TypeRef {
-        match *self {
-            StructTypeRef::Ref(rf) => rf
+    fn get(element_types: &[TypeRef], packed: bool) -> Self {
+        unsafe {
+            Self::from_ref(LLVMStructType(element_types.as_ptr(),
+                                          element_types.len() as c_uint,
+                                          packed as ::Bool))
+        }
+    }
+
+    fn new_named(ctx: &context::Context, name: &str) -> Self {
+        unsafe {
+            Self::from_ref(LLVMStructCreateNamed(ctx.to_ref(),
+                                                 name.as_ptr() as *const c_char))
         }
     }
 }
 
-impl StructType for StructTypeRef {
-    fn struct_type_in_context(ctx: &context::Context, element_types: &[TypeRef], packed: bool) -> StructTypeRef {
-        let rf = unsafe {
-            LLVMStructTypeInContext(ctx.get_ref(),
-                                    element_types.as_ptr(),
-                                    element_types.len() as c_uint,
-                                    packed as ::Bool)
-        };
-
-        StructTypeRef::Ref(rf)
-    }
-
-    fn struct_type(element_types: &[TypeRef], packed: bool) -> StructTypeRef {
-        let rf = unsafe {
-            LLVMStructType(element_types.as_ptr(),
-                           element_types.len() as c_uint,
-                           packed as ::Bool)
-        };
-
-        StructTypeRef::Ref(rf)
-    }
-
-    fn struct_create_named(ctx: &context::Context, name: &str) -> StructTypeRef {
-        let rf = unsafe {
-            LLVMStructCreateNamed(ctx.get_ref(),
-                                  name.as_ptr() as *const c_char)
-        };
-
-        StructTypeRef::Ref(rf)
-    }
-
+pub trait StructType : Type {
     fn get_name(&self) -> String {
         let buf = unsafe {
-            std::ffi::CStr::from_ptr(LLVMGetStructName(self.get_ref()))
+            std::ffi::CStr::from_ptr(LLVMGetStructName(self.to_ref()))
         };
         String::from_utf8_lossy(buf.to_bytes()).into_owned()
     }
 
     fn set_body(&self, element_types: &[TypeRef], packed: bool) {
         unsafe {
-            LLVMStructSetBody(self.get_ref(),
+            LLVMStructSetBody(self.to_ref(),
                               element_types.as_ptr(),
                               element_types.len() as c_uint,
                               packed as ::Bool)
@@ -458,7 +325,7 @@ impl StructType for StructTypeRef {
 
     fn count_element_types(&self) -> u32 {
         unsafe {
-            LLVMCountStructElementTypes(self.get_ref())
+            LLVMCountStructElementTypes(self.to_ref())
         }
     }
 
@@ -468,244 +335,165 @@ impl StructType for StructTypeRef {
         let p = buf.as_mut_ptr();
         unsafe {
             std::mem::forget(buf);
-            LLVMGetStructElementTypes(self.get_ref(), p);
+            LLVMGetStructElementTypes(self.to_ref(), p);
             Vec::from_raw_parts(p, element_count as usize, element_count as usize)
         }
     }
 
     fn is_packed(&self) -> bool {
         unsafe {
-            LLVMIsPackedStruct(self.get_ref()) > 0
+            LLVMIsPackedStruct(self.to_ref()) > 0
         }
     }
 
     fn is_opaque(&self) -> bool {
         unsafe {
-            LLVMIsOpaqueStruct(self.get_ref()) > 0
+            LLVMIsOpaqueStruct(self.to_ref()) > 0
         }
     }
 }
 
+new_ref_type!(StructTypeRef for TypeRef implementing Type, StructType, TypeCtor, StructTypeCtor);
+
+pub trait SequentialTypeCtor : TypeCtor {}
+
 pub trait SequentialType : Type {
     fn get_element_type(&self) -> TypeRef {
         unsafe {
-            LLVMGetElementType(self.get_ref())
+            LLVMGetElementType(self.to_ref())
+        }
+    }
+}
+
+pub trait ArrayTypeCtor : SequentialTypeCtor {
+    fn get(element_type: &Type, element_count: u32) -> Self {
+        unsafe {
+            Self::from_ref(LLVMArrayType(element_type.to_ref(),
+                                         element_count))
         }
     }
 }
 
 pub trait ArrayType : SequentialType {
-    fn array_type(element_type: &Type, element_count: u32) -> Self;
-    fn get_length(&self) -> u32;
+    fn get_length(&self) -> u32 {
+        unsafe {
+            LLVMGetArrayLength(self.to_ref())
+        }
+    }
+}
+
+pub trait PointerTypeCtor : SequentialTypeCtor {
+    fn get(element_type: &Type, address_space: u32) -> Self {
+        unsafe {
+            Self::from_ref(LLVMPointerType(element_type.to_ref(),
+                                           address_space))
+        }
+    }
 }
 
 pub trait PointerType : SequentialType {
-    fn pointer_type(element_type: &Type, address_space: u32) -> Self;
-    fn get_address_space(&self) -> u32;
+    fn get_address_space(&self) -> u32 {
+        unsafe {
+            LLVMGetPointerAddressSpace(self.to_ref())
+        }
+    }
+}
+
+pub trait VectorTypeCtor : SequentialTypeCtor {
+    fn get(element_type: &Type, element_count: u32) -> Self {
+        unsafe {
+            Self::from_ref(LLVMVectorType(element_type.to_ref(),
+                                           element_count))
+        }
+    }
 }
 
 pub trait VectorType : SequentialType {
-    fn vector_type(element_type: &Type, element_count: u32) -> Self;
-    fn get_size(&self) -> u32;
-}
-
-pub enum ArrayTypeRef {
-    Ref(TypeRef)
-}
-
-impl Type for ArrayTypeRef {
-    fn get_ref(&self) -> TypeRef {
-        match *self {
-            ArrayTypeRef::Ref(rf) => rf
-        }
-    }
-}
-
-impl SequentialType for ArrayTypeRef {}
-
-pub enum PointerTypeRef {
-    Ref(TypeRef)
-}
-
-impl Type for PointerTypeRef {
-    fn get_ref(&self) -> TypeRef {
-        match *self {
-            PointerTypeRef::Ref(rf) => rf
-        }
-    }
-}
-
-impl SequentialType for PointerTypeRef {}
-
-pub enum VectorTypeRef {
-    Ref(TypeRef)
-}
-
-impl Type for VectorTypeRef {
-    fn get_ref(&self) -> TypeRef {
-        match *self {
-            VectorTypeRef::Ref(rf) => rf
-        }
-    }
-}
-
-impl SequentialType for VectorTypeRef {}
-
-impl ArrayType for ArrayTypeRef {
-    fn array_type(element_type: &Type, element_count: u32) -> Self {
-        let rf = unsafe {
-            LLVMArrayType(element_type.get_ref(),
-                          element_count)
-        };
-
-        ArrayTypeRef::Ref(rf)
-    }
-
-    fn get_length(&self) -> u32 {
-        unsafe {
-            LLVMGetArrayLength(self.get_ref())
-        }
-    }
-}
-
-impl PointerType for PointerTypeRef {
-    fn pointer_type(element_type: &Type, address_space: u32) -> Self {
-        let rf = unsafe {
-            LLVMPointerType(element_type.get_ref(),
-                            address_space)
-        };
-
-        PointerTypeRef::Ref(rf)
-    }
-
-    fn get_address_space(&self) -> u32 {
-        unsafe {
-            LLVMGetPointerAddressSpace(self.get_ref())
-        }
-    }
-}
-
-impl VectorType for VectorTypeRef {
-    fn vector_type(element_type: &Type, element_count: u32) -> Self {
-        let rf = unsafe {
-            LLVMVectorType(element_type.get_ref(),
-                           element_count)
-        };
-
-        VectorTypeRef::Ref(rf)
-    }
-
     fn get_size(&self) -> u32 {
         unsafe {
-            LLVMGetVectorSize(self.get_ref())
+            LLVMGetVectorSize(self.to_ref())
         }
     }
 }
 
-pub trait VoidType {
-    fn void_type_in_context(ctx: &context::Context) -> Self;
-    fn void_type() -> Self;
-}
+new_ref_type!(ArrayTypeRef for TypeRef
+              implementing
+              Type,
+              SequentialType,
+              ArrayType,
+              TypeCtor,
+              SequentialTypeCtor,
+              ArrayTypeCtor);
 
-pub trait LabelType {
-    fn label_type_in_context(ctx: &context::Context) -> Self;
-    fn label_type() -> Self;
-}
+new_ref_type!(PointerTypeRef for TypeRef
+              implementing
+              Type,
+              SequentialType,
+              PointerType,
+              TypeCtor,
+              SequentialTypeCtor,
+              PointerTypeCtor);
 
-pub trait X86MMXType {
-    fn x86mmx_type_in_context(ctx: &context::Context) -> Self;
-    fn x86mmx_type() -> Self;
-}
+new_ref_type!(VectorTypeRef for TypeRef
+              implementing
+              Type,
+              SequentialType,
+              VectorType,
+              TypeCtor,
+              SequentialTypeCtor,
+              VectorTypeCtor);
 
-pub enum VoidTypeRef {
-    Ref(TypeRef)
-}
+pub trait VoidTypeCtor : TypeCtor {
+    fn get_in_context(ctx: &context::Context) -> Self {
+        unsafe {
+            Self::from_ref(LLVMVoidTypeInContext(ctx.to_ref()))
+        }
+    }
 
-impl Type for VoidTypeRef {
-    fn get_ref(&self) -> TypeRef {
-        match *self {
-            VoidTypeRef::Ref(rf) => rf
+    fn get() -> Self {
+        unsafe {
+            Self::from_ref(LLVMVoidType())
         }
     }
 }
 
-pub enum LabelTypeRef {
-    Ref(TypeRef)
-}
+pub trait VoidType : std::marker::MarkerTrait {}
 
-impl Type for LabelTypeRef {
-    fn get_ref(&self) -> TypeRef {
-        match *self {
-            LabelTypeRef::Ref(rf) => rf
+pub trait LabelTypeCtor : TypeCtor {
+    fn get_in_context(ctx: &context::Context) -> Self {
+        unsafe {
+            Self::from_ref(LLVMLabelTypeInContext(ctx.to_ref()))
+        }
+    }
+
+    fn get() -> Self {
+        unsafe {
+            Self::from_ref(LLVMLabelType())
         }
     }
 }
 
-pub enum X86MMXTypeRef {
-    Ref(TypeRef)
-}
+pub trait LabelType : std::marker::MarkerTrait {}
 
-impl Type for X86MMXTypeRef {
-    fn get_ref(&self) -> TypeRef {
-        match *self {
-            X86MMXTypeRef::Ref(rf) => rf
+pub trait X86MMXTypeCtor : TypeCtor {
+    fn get_in_context(ctx: &context::Context) -> Self {
+        unsafe {
+            Self::from_ref(LLVMX86MMXTypeInContext(ctx.to_ref()))
+        }
+    }
+
+    fn get() -> Self {
+        unsafe {
+            Self::from_ref(LLVMX86MMXType())
         }
     }
 }
 
-impl VoidType for VoidTypeRef {
-    fn void_type_in_context(ctx: &context::Context) -> Self {
-        let rf = unsafe {
-            LLVMVoidTypeInContext(ctx.get_ref())
-        };
+pub trait X86MMXType : std::marker::MarkerTrait {}
 
-        VoidTypeRef::Ref(rf)
-    }
-
-    fn void_type() -> Self {
-        let rf = unsafe {
-            LLVMVoidType()
-        };
-
-        VoidTypeRef::Ref(rf)
-    }
-}
-
-impl LabelType for LabelTypeRef {
-    fn label_type_in_context(ctx: &context::Context) -> Self {
-        let rf = unsafe {
-            LLVMLabelTypeInContext(ctx.get_ref())
-        };
-
-        LabelTypeRef::Ref(rf)
-    }
-
-    fn label_type() -> Self {
-        let rf = unsafe {
-            LLVMLabelType()
-        };
-
-        LabelTypeRef::Ref(rf)
-    }
-}
-
-impl X86MMXType for X86MMXTypeRef {
-    fn x86mmx_type_in_context(ctx: &context::Context) -> Self {
-        let rf = unsafe {
-            LLVMX86MMXTypeInContext(ctx.get_ref())
-        };
-
-        X86MMXTypeRef::Ref(rf)
-    }
-
-    fn x86mmx_type() -> Self {
-        let rf = unsafe {
-            LLVMX86MMXType()
-        };
-
-        X86MMXTypeRef::Ref(rf)
-    }
-}
+new_ref_type!(VoidTypeRef for TypeRef implementing Type, VoidType, TypeCtor, VoidTypeCtor);
+new_ref_type!(LabelTypeRef for TypeRef implementing Type, LabelType, TypeCtor, LabelTypeCtor);
+new_ref_type!(X86MMXTypeRef for TypeRef implementing Type, X86MMXType, TypeCtor, X86MMXTypeCtor);
 
 pub mod ffi {
     use ::Bool;

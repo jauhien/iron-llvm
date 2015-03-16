@@ -7,9 +7,14 @@
 // except according to those terms.
 
 #![allow(non_upper_case_globals)]
+#![allow(unused_imports)]
 
+#![feature(core)]
 #![feature(io)]
 #![feature(libc)]
+
+#![feature(log_syntax)]
+#![feature(trace_macros)]
 
 extern crate libc;
 #[macro_use] #[no_link] extern crate rustc_bitflags;
@@ -20,7 +25,33 @@ use std::io::Write;
 use libc::c_uint;
 
 use core::*;
-use core::types::{Type, IntType, FunctionType, StructType};
+use core::types::{Type, IntType, IntTypeCtor, FunctionType, FunctionTypeCtor, StructType, StructTypeCtor};
+
+macro_rules! new_ref_type(
+    ($ref_type:ident for $llvm_ref_type:ident implementing $($base_trait:ty),+) => (
+        pub enum $ref_type {
+            Rf($llvm_ref_type)
+        }
+
+        impl LLVMRef<$llvm_ref_type> for $ref_type {
+            fn to_ref(&self) -> $llvm_ref_type {
+                match *self {
+                    $ref_type::Rf(rf) => rf
+                }
+            }
+        }
+
+        impl LLVMRefCtor<$llvm_ref_type> for $ref_type {
+            unsafe fn from_ref(rf: $llvm_ref_type) -> $ref_type {
+                $ref_type::Rf(rf)
+            }
+        }
+
+        $(
+            impl $base_trait for $ref_type {}
+        )*
+        )
+);
 
 pub mod core;
 
@@ -30,14 +61,22 @@ pub type Bool = c_uint;
 pub const True: Bool = 1 as Bool;
 pub const False: Bool = 0 as Bool;
 
+pub trait LLVMRef<Ref> {
+    fn to_ref(&self) -> Ref;
+}
+
+pub trait LLVMRefCtor<Ref> : Sized {
+    unsafe fn from_ref(rf: Ref) -> Self;
+}
+
 #[test]
 fn it_works() {
     let c1 = context::Context::new();
 
-    let c1_ref = c1.get_ref();
+    let c1_ref = c1.to_ref();
 
     let gc1 = context::Context::get_global();
-    let gc1_ref = gc1.get_ref();
+    let gc1_ref = gc1.to_ref();
 
     let gc = unsafe {
         context::ffi::LLVMGetGlobalContext()
@@ -47,10 +86,10 @@ fn it_works() {
     assert!(c1_ref != gc);
 
     let ty = unsafe {
-        types::ffi::LLVMInt64TypeInContext(gc1.get_ref())
+        types::ffi::LLVMInt64TypeInContext(gc1.to_ref())
     };
 
-   assert!(ty.get_context().get_ref() == gc1_ref);
+   assert!(ty.get_context().to_ref() == gc1_ref);
 
     let mut stderr = io::stderr();
 
@@ -66,7 +105,7 @@ fn it_works() {
     writeln!(&mut stderr, "========").unwrap();
     writeln!(&mut stderr, "").unwrap();
 
-    let int10 = types::IntTypeRef::int_type(10);
+    let int10 = types::IntTypeRef::get_int(10);
     writeln!(&mut stderr, "").unwrap();
     writeln!(&mut stderr, "========").unwrap();
     writeln!(&mut stderr, "Testing int10").unwrap();
@@ -74,8 +113,8 @@ fn it_works() {
     writeln!(&mut stderr, "========").unwrap();
     writeln!(&mut stderr, "").unwrap();
 
-    let args = vec![ty.get_ref(), int10.get_ref()];
-    let func = types::FunctionTypeRef::function_type(&ty, args.as_slice(), false);
+    let args = vec![ty.to_ref(), int10.to_ref()];
+    let func = types::FunctionTypeRef::get(&ty, args.as_slice(), false);
 
     writeln!(&mut stderr, "").unwrap();
     writeln!(&mut stderr, "========").unwrap();
@@ -93,7 +132,7 @@ fn it_works() {
     writeln!(&mut stderr, "========").unwrap();
     writeln!(&mut stderr, "").unwrap();
 
-    let struct1 = types::StructTypeRef::struct_create_named(&gc1, "testing");
+    let struct1 = types::StructTypeRef::new_named(&gc1, "testing");
     writeln!(&mut stderr, "").unwrap();
     writeln!(&mut stderr, "========").unwrap();
     writeln!(&mut stderr, "Testing struct type").unwrap();
