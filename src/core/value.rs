@@ -13,9 +13,12 @@
 
 use std;
 
+use libc::{c_char, c_uint};
+
 use ::{LLVMRef, LLVMRefCtor};
 use core;
 use core::{TypeRef, ValueRef, UseRef};
+use core::types::{Type, IntType, RealType};
 use self::ffi::*;
 
 pub trait ValueCtor : LLVMRefCtor<ValueRef> {}
@@ -196,7 +199,7 @@ pub trait User : Value {
 
 new_ref_type!(UserRef for ValueRef implementing Value);
 
-pub trait ConstCtor<Ty: core::types::Type + ?Sized> : ValueCtor {
+pub trait ConstCtor<Ty: Type + ?Sized> : ValueCtor {
     fn get_null(ty: &Ty) -> Self {
         unsafe {
             Self::from_ref(LLVMConstNull(ty.to_ref()))
@@ -230,14 +233,83 @@ new_ref_type!(ConstRef for ValueRef
               User,
               Const,
               ValueCtor,
-              ConstCtor<core::types::Type>
+              ConstCtor<Type>
               );
 
+
+pub trait IntConstCtor : ConstCtor<IntType> {
+    fn get_all_ones(ty: &IntType) -> Self {
+        unsafe {
+            Self::from_ref(LLVMConstAllOnes(ty.to_ref()))
+        }
+    }
+
+    fn get(ty: &IntType, val: u64, sign_extend: bool) -> Self {
+        unsafe {
+            Self::from_ref(LLVMConstInt(ty.to_ref(), val, sign_extend as ::Bool))
+        }
+    }
+
+    fn get_arbitrary_precision(ty: &IntType, words: &[u64]) -> Self {
+        unsafe {
+            Self::from_ref(LLVMConstIntOfArbitraryPrecision(ty.to_ref(),
+                                                            words.len() as c_uint,
+                                                            words.as_ptr()))
+        }
+    }
+
+    fn get_from_string(ty: &IntType, text: &str, radix: u8) -> Self {
+        unsafe {
+            Self::from_ref(LLVMConstIntOfString(ty.to_ref(),
+                                                text.as_ptr() as *const c_char,
+                                                radix))
+        }
+    }
+}
+
+pub trait IntConst : Const {
+    fn get_z_ext_value(&self) -> u64 {
+        unsafe {
+            LLVMConstIntGetZExtValue(self.to_ref())
+        }
+    }
+
+    fn get_s_ext_value(&self) -> i64 {
+        unsafe {
+            LLVMConstIntGetSExtValue(self.to_ref())
+        }
+    }
+}
+
+pub trait RealConstCtor : ConstCtor<RealType> {
+    fn get(ty: &RealType, val: f64) -> Self {
+        unsafe {
+            Self::from_ref(LLVMConstReal(ty.to_ref(), val))
+        }
+    }
+
+    fn get_from_string(ty: &RealType, text: &str) -> Self {
+        unsafe {
+            Self::from_ref(LLVMConstRealOfString(ty.to_ref(), text.as_ptr() as *const c_char))
+        }
+    }
+}
+
+pub trait RealConst : Const {
+    fn get_double(&self) -> (f64, bool) {
+        let mut info_lost: ::Bool = 0;
+        let val = unsafe {
+            LLVMConstRealGetDouble(self.to_ref(), &mut info_lost)
+        };
+
+        (val, info_lost > 0)
+    }
+}
 
 pub mod ffi {
     use ::Bool;
     use core::*;
-    use libc::{c_char, c_int, c_uint};
+    use libc::{c_char, c_int, c_longlong, c_uint, c_ulonglong, uint64_t};
 
     #[link(name = "LLVMCore")]
     extern {
@@ -371,5 +443,82 @@ pub mod ffi {
          * specified type.
          */
         pub fn LLVMConstPointerNull(Ty: TypeRef) -> ValueRef;
+
+
+        /* Operations on scalar constants */
+
+        /**
+         * Obtain a constant value for an integer type.
+         *
+         * The returned value corresponds to a llvm::ConstantInt.
+         */
+        pub fn LLVMConstInt(IntTy: TypeRef, N: c_ulonglong, SignExtend: Bool)
+                            -> ValueRef;
+
+        /**
+         * Obtain a constant value for an integer of arbitrary precision.
+         */
+        pub fn LLVMConstIntOfArbitraryPrecision(IntTy: TypeRef,
+                                                NumWords: c_uint,
+                                                Words: *const uint64_t)
+                                                -> ValueRef;
+
+        /**
+         * Obtain a constant value for an integer parsed from a string.
+         *
+         * A similar API, LLVMConstIntOfStringAndSize is also available. If the
+         * string's length is available, it is preferred to call that function
+         * instead.
+         */
+        pub fn LLVMConstIntOfString(IntTy: TypeRef, Text: *const c_char, Radix: u8)
+                                    -> ValueRef;
+
+        /**
+         * Obtain a constant value for an integer parsed from a string with
+         * specified length.
+         */
+        pub fn LLVMConstIntOfStringAndSize(IntTy: TypeRef,
+                                           Text: *const c_char,
+                                           SLen: c_uint,
+                                           Radix: u8)
+                                           -> ValueRef;
+
+        /**
+         * Obtain a constant value referring to a double floating point value.
+         */
+        pub fn LLVMConstReal(RealTy: TypeRef, N: f64) -> ValueRef;
+
+        /**
+         * Obtain a constant for a floating point value parsed from a string.
+         *
+         * A similar API, LLVMConstRealOfStringAndSize is also available. It
+         * should be used if the input string's length is known.
+         */
+        pub fn LLVMConstRealOfString(RealTy: TypeRef, Text: *const c_char)
+                                     -> ValueRef;
+
+        /**
+         * Obtain a constant for a floating point value parsed from a string.
+         */
+        pub fn LLVMConstRealOfStringAndSize(RealTy: TypeRef,
+                                            Text: *const c_char,
+                                            SLen: c_uint)
+                                            -> ValueRef;
+
+        /**
+         * Obtain the zero extended value for an integer constant value.
+         */
+        pub fn LLVMConstIntGetZExtValue(ConstantVal: ValueRef) -> c_ulonglong;
+
+        /**
+         * Obtain the sign extended value for an integer constant value.
+         */
+        pub fn LLVMConstIntGetSExtValue(ConstantVal: ValueRef) -> c_longlong;
+
+        /**
+         * Obtain the double value for an floating point constant value.
+         * losesInfo indicates if some precision was lost in the conversion.
+         */
+        pub fn LLVMConstRealGetDouble(ConstantVal: ValueRef, losesInfo: *mut Bool) -> f64;
     }
 }
