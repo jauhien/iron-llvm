@@ -178,6 +178,7 @@ pub enum DLLStorageClass {
 }
 
 #[derive(Copy, PartialEq)]
+#[repr(C)]
 pub enum CallConv {
     CCallConv = 0,
     FastCallConv = 8,
