@@ -9,8 +9,7 @@
 #![allow(non_upper_case_globals)]
 #![allow(unused_imports)]
 
-#![feature(core)]
-#![feature(io)]
+#![feature(convert)]
 #![feature(libc)]
 
 #![feature(log_syntax)]

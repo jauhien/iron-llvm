@@ -6,11 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#![feature(old_io)]
-#![feature(os)]
-
-use std::old_io::Command;
-use std::os;
+use std::process::Command;
 
 fn main() {
     Command::new("python2").arg("src/etc/mklldeps.py")

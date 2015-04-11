@@ -457,7 +457,7 @@ pub trait VoidTypeCtor : TypeCtor {
     }
 }
 
-pub trait VoidType : std::marker::MarkerTrait {}
+pub trait VoidType {}
 
 pub trait LabelTypeCtor : TypeCtor {
     fn get_in_context(ctx: &context::Context) -> Self {
@@ -473,7 +473,7 @@ pub trait LabelTypeCtor : TypeCtor {
     }
 }
 
-pub trait LabelType : std::marker::MarkerTrait {}
+pub trait LabelType {}
 
 pub trait X86MMXTypeCtor : TypeCtor {
     fn get_in_context(ctx: &context::Context) -> Self {
@@ -489,7 +489,7 @@ pub trait X86MMXTypeCtor : TypeCtor {
     }
 }
 
-pub trait X86MMXType : std::marker::MarkerTrait {}
+pub trait X86MMXType {}
 
 new_ref_type!(VoidTypeRef for TypeRef implementing Type, VoidType, TypeCtor, VoidTypeCtor);
 new_ref_type!(LabelTypeRef for TypeRef implementing Type, LabelType, TypeCtor, LabelTypeCtor);

@@ -123,7 +123,7 @@ bitflags! {
 */
 pub type Opcode = u32;
 
-#[derive(Copy, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 #[repr(C)]
 pub enum TypeKind {
     Void      = 0,  //**< type with no size */
@@ -148,7 +148,7 @@ pub enum TypeKind {
 // DLLExportLinkage, GhostLinkage and LinkOnceODRAutoHideLinkage.
 // LinkerPrivateLinkage and LinkerPrivateWeakLinkage are not included either;
 // they've been removed in upstream LLVM commit r203866.
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum Linkage {
     ExternalLinkage = 0,            //**< Externally visible function */
     AvailableExternallyLinkage = 1,
@@ -163,21 +163,21 @@ pub enum Linkage {
     CommonLinkage = 14,             //**< Tentative definitions */
 }
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum Visibility {
     DefaultVisibility = 0,   //**< The GV is visible */
     HiddenVisibility = 1,    //**< The GV is hidden */
     ProtectedVisibility = 2, //**< The GV is protected */
 }
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum DLLStorageClass {
     DefaultStorageClass = 0,
     DLLImportStorageClass = 1, //**< Function to be imported from DLL. */
     DLLExportStorageClass = 2, //**< Function to be accessible from DLL. */
 }
 
-#[derive(Copy, PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 #[repr(C)]
 pub enum CallConv {
     CCallConv = 0,
@@ -190,7 +190,7 @@ pub enum CallConv {
     X86_64_Win64 = 79,
 }
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum IntPredicate {
     IntEQ = 32,  //**< equal */
     IntNE = 33,  //**< not equal */
@@ -204,7 +204,7 @@ pub enum IntPredicate {
     IntSLE = 41, //**< signed less or equal */
 }
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum RealPredicate {
     RealPredicateFalse = 0, //**< Always false (always folded) */
     RealOEQ = 1,            //**< True if ordered and equal */
@@ -224,13 +224,13 @@ pub enum RealPredicate {
     RealPredicateTrue = 15, //**< Always true (always folded) */
 }
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum LandingPadClauseTy {
     LandingPadCatch = 0,  //**< A catch clause   */
     LandingPadFilter = 1, //**< A filter clause  */
 }
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum ThreadLocalMode {
     NotThreadLocal = 0,
     GeneralDynamicTLSModel = 1,
@@ -240,7 +240,7 @@ pub enum ThreadLocalMode {
 }
 
 #[repr(C)]
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum AtomicOrdering {
     NotAtomic = 0,            //**< A load or store which is not atomic */
     Unordered = 1,            //**< Lowest level of atomicity, guarantees
@@ -270,7 +270,7 @@ pub enum AtomicOrdering {
 }
 
 #[repr(C)]
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum AtomicRMWBinOp {
     AtomicRMWBinOpXchg = 0,  //**< Set the new value and return the one old */
     AtomicRMWBinOpAdd = 1,   //**< Add a value and return the old one */
@@ -295,7 +295,7 @@ pub enum AtomicRMWBinOp {
 }
 
 #[repr(C)]
-#[derive(Copy, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum DiagnosticSeverity {
     Error,
     Warning,
