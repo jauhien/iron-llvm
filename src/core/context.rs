@@ -1,7 +1,5 @@
 // Copyright 2015 Jauhien Piatlicki.
 //
-// Copyright 2012-2015 The Rust Project Developers.
-//
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
@@ -11,13 +9,14 @@
 // Core LLVM: Context
 // LLVM-C header Core.h
 
-use core::ContextRef;
-use self::ffi::*;
+use llvm_sys::*;
+use llvm_sys::prelude::*;
+use llvm_sys::core::*;
 
 use ::{LLVMRef, LLVMRefCtor};
 
 pub struct Context {
-    context: ContextRef,
+    context: LLVMContextRef,
     owned: bool
 }
 
@@ -29,7 +28,7 @@ impl Context {
 
         Context{
             context: context,
-            owned: false
+            owned: true
         }
     }
 
@@ -40,19 +39,19 @@ impl Context {
 
         Context{
             context: context,
-            owned: true
+            owned: false
         }
     }
 }
 
-impl LLVMRef<ContextRef> for Context {
-    fn to_ref(&self) -> ContextRef {
+impl LLVMRef<LLVMContextRef> for Context {
+    fn to_ref(&self) -> LLVMContextRef {
         self.context
     }
 }
 
-impl LLVMRefCtor<ContextRef> for Context {
-    unsafe fn from_ref(context_ref : ContextRef) -> Context {
+impl LLVMRefCtor<LLVMContextRef> for Context {
+    unsafe fn from_ref(context_ref : LLVMContextRef) -> Context {
         Context{
             context: context_ref,
             owned: false
@@ -67,63 +66,5 @@ impl Drop for Context {
                 LLVMContextDispose(self.context);
             }
         }
-    }
-}
-
-pub mod ffi {
-    use core::*;
-    use libc::{c_char, c_void, c_uint};
-
-    #[link(name = "LLVMCore")]
-    extern {
-        /**
-         * Create a new context.
-         *
-         * Every call to this function should be paired with a call to
-         * LLVMContextDispose() or the context will leak memory.
-         */
-        pub fn LLVMContextCreate() -> ContextRef;
-
-        /**
-         * Obtain the global context instance.
-         */
-        pub fn LLVMGetGlobalContext() -> ContextRef;
-
-        /**
-         * Set the diagnostic handler for this context.
-         */
-        pub fn LLVMContextSetDiagnosticHandler(C: ContextRef,
-                                               Handler: DiagnosticHandler,
-                                               DiagnosticContext: *mut c_void);
-
-        /**
-         * Set the yield callback function for this context.
-         */
-        pub fn LLVMContextSetYieldCallback(C: ContextRef,
-                                           Handler: YieldCallback,
-                                           OpaqueHandle: *mut c_void);
-
-        /**
-         * Destroy a context instance.
-         *
-         * This should be called for every call to LLVMContextCreate() or memory
-         * will be leaked.
-         */
-        pub fn LLVMContextDispose(C: ContextRef);
-
-        /**
-         * Return a string representation of the DiagnosticInfo. Use
-         * LLVMDisposeMessage to free the string.
-         */
-        pub fn LLVMGetDiagInfoDescription(DI: DiagnosticInfoRef) -> *const c_char;
-
-        pub fn LLVMGetDiagInfoSeverity(DI: DiagnosticInfoRef) -> DiagnosticSeverity;
-
-        pub fn LLVMGetMDKindIDInContext(C: ContextRef,
-                                        Name: *const c_char,
-                                        SLen: c_uint) -> c_uint;
-
-        pub fn LLVMGetMDKindID(Name: *const c_char,
-                               SLen: c_uint);
     }
 }

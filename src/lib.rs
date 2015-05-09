@@ -16,12 +16,15 @@
 #![feature(trace_macros)]
 
 extern crate libc;
-#[macro_use] #[no_link] extern crate rustc_bitflags;
+extern crate llvm_sys;
 
 use std::io;
 use std::io::Write;
 
 use libc::c_uint;
+
+use llvm_sys::prelude::*;
+use llvm_sys::core::*;
 
 use core::*;
 use core::types::{Type, IntType, IntTypeCtor, FunctionType, FunctionTypeCtor, StructType, StructTypeCtor};
@@ -54,12 +57,6 @@ macro_rules! new_ref_type(
 
 pub mod core;
 
-mod llvmdeps;
-
-pub type Bool = c_uint;
-pub const True: Bool = 1 as Bool;
-pub const False: Bool = 0 as Bool;
-
 pub trait LLVMRef<Ref> {
     fn to_ref(&self) -> Ref;
 }
@@ -78,14 +75,14 @@ fn it_works() {
     let gc1_ref = gc1.to_ref();
 
     let gc = unsafe {
-        context::ffi::LLVMGetGlobalContext()
+        LLVMGetGlobalContext()
     };
 
     assert!(gc == gc1_ref);
     assert!(c1_ref != gc);
 
     let ty = unsafe {
-        types::ffi::LLVMInt64TypeInContext(gc1.to_ref())
+        LLVMInt64TypeInContext(gc1.to_ref())
     };
 
    assert!(ty.get_context().to_ref() == gc1_ref);
@@ -95,7 +92,7 @@ fn it_works() {
     writeln!(&mut stderr, "").unwrap();
     writeln!(&mut stderr, "========").unwrap();
     writeln!(&mut stderr, "Testing Type").unwrap();
-    writeln!(&mut stderr, "kind: {:?}", ty.get_kind()).unwrap();
+    //writeln!(&mut stderr, "kind: {:?}", ty.get_kind()).unwrap();
     writeln!(&mut stderr, "is sized: {:?}", ty.is_sized()).unwrap();
     write!(&mut stderr, "dump: ").unwrap();
     ty.dump();
@@ -112,8 +109,8 @@ fn it_works() {
     writeln!(&mut stderr, "========").unwrap();
     writeln!(&mut stderr, "").unwrap();
 
-    let args = vec![ty.to_ref(), int10.to_ref()];
-    let func = types::FunctionTypeRef::get(&ty, args.as_slice(), false);
+    let mut args = vec![ty.to_ref(), int10.to_ref()];
+    let func = types::FunctionTypeRef::get(&ty, args.as_mut_slice(), false);
 
     writeln!(&mut stderr, "").unwrap();
     writeln!(&mut stderr, "========").unwrap();
@@ -140,7 +137,7 @@ fn it_works() {
     writeln!(&mut stderr, "is opaque: {:?}", struct1.is_opaque()).unwrap();
     writeln!(&mut stderr, "setting body...").unwrap();
 
-    struct1.set_body(args.as_slice(), false);
+    struct1.set_body(args.as_mut_slice(), false);
 
     writeln!(&mut stderr, "string rep: {:?}", struct1.print_to_string()).unwrap();
     writeln!(&mut stderr, "is opaque: {:?}", struct1.is_opaque()).unwrap();

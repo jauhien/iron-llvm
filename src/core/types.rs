@@ -1,7 +1,5 @@
 // Copyright 2015 Jauhien Piatlicki.
 //
-// Copyright 2012-2015 The Rust Project Developers.
-//
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
@@ -15,13 +13,15 @@ use std;
 
 use libc::{c_char, c_uint};
 
-use ::{LLVMRef, LLVMRefCtor};
-use core;
-use core::{context, TypeKind, TypeRef};
-use self::ffi::*;
+use llvm_sys::*;
+use llvm_sys::prelude::*;
+use llvm_sys::core::*;
 
-pub trait Type : LLVMRef<TypeRef> {
-    fn get_kind(&self) -> TypeKind {
+use ::{LLVMRef, LLVMRefCtor};
+use core::context;
+
+pub trait Type : LLVMRef<LLVMTypeRef> {
+    fn get_kind(&self) -> LLVMTypeKind {
         unsafe {
             LLVMGetTypeKind(self.to_ref())
         }
@@ -47,31 +47,32 @@ pub trait Type : LLVMRef<TypeRef> {
     }
 
     fn print_to_string(&self) -> String {
-        let buf = unsafe {
-            std::ffi::CStr::from_ptr(LLVMPrintTypeToString(self.to_ref()))
-        };
-        let result = String::from_utf8_lossy(buf.to_bytes()).into_owned();
-        unsafe { core::ffi::LLVMDisposeMessage(buf.as_ptr()); }
-        result
+        unsafe {
+            let buf = LLVMPrintTypeToString(self.to_ref());
+            let cstr_buf = std::ffi::CStr::from_ptr(buf);
+            let result = String::from_utf8_lossy(cstr_buf.to_bytes()).into_owned();
+            LLVMDisposeMessage(buf);
+            result
+        }
     }
 }
 
-pub trait TypeCtor : LLVMRefCtor<TypeRef> {}
+pub trait TypeCtor : LLVMRefCtor<LLVMTypeRef> {}
 
-impl LLVMRef<TypeRef> for TypeRef {
-    fn to_ref(&self) -> TypeRef {
+impl LLVMRef<LLVMTypeRef> for LLVMTypeRef {
+    fn to_ref(&self) -> LLVMTypeRef {
         *self
     }
 }
 
-impl LLVMRefCtor<TypeRef> for TypeRef {
-    unsafe fn from_ref(rf: TypeRef) -> TypeRef {
+impl LLVMRefCtor<LLVMTypeRef> for LLVMTypeRef {
+    unsafe fn from_ref(rf: LLVMTypeRef) -> LLVMTypeRef {
         rf
     }
 }
 
-impl Type for TypeRef {}
-impl TypeCtor for TypeRef {}
+impl Type for LLVMTypeRef {}
+impl TypeCtor for LLVMTypeRef {}
 
 pub trait IntTypeCtor : TypeCtor {
     fn get_int1_in_context(ctx: &context::Context) -> Self  {
@@ -156,7 +157,7 @@ pub trait IntType : Type {
     }
 }
 
-new_ref_type!(IntTypeRef for TypeRef implementing Type, IntType, TypeCtor, IntTypeCtor);
+new_ref_type!(IntTypeRef for LLVMTypeRef implementing Type, IntType, TypeCtor, IntTypeCtor);
 
 pub trait RealTypeCtor : TypeCtor {
     fn get_half_in_context(ctx: &context::Context) -> Self {
@@ -234,15 +235,15 @@ pub trait RealTypeCtor : TypeCtor {
 
 pub trait RealType : Type {}
 
-new_ref_type!(RealTypeRef for TypeRef implementing Type, RealType, TypeCtor, RealTypeCtor);
+new_ref_type!(RealTypeRef for LLVMTypeRef implementing Type, RealType, TypeCtor, RealTypeCtor);
 
 pub trait FunctionTypeCtor : TypeCtor {
-    fn get(return_type: &Type, param_types: &[TypeRef], is_var_arg: bool) -> Self {
+    fn get(return_type: &Type, param_types: &mut [LLVMTypeRef], is_var_arg: bool) -> Self {
         unsafe {
             Self::from_ref(LLVMFunctionType(return_type.to_ref(),
-                                            param_types.as_ptr(),
+                                            param_types.as_mut_ptr(),
                                             param_types.len() as c_uint,
-                                            is_var_arg as ::Bool))
+                                            is_var_arg as LLVMBool))
         }
     }
 }
@@ -254,7 +255,7 @@ pub trait FunctionType : Type {
         }
     }
 
-    fn get_return_type(&self) -> TypeRef {
+    fn get_return_type(&self) -> LLVMTypeRef {
         unsafe {
             LLVMGetReturnType(self.to_ref())
         }
@@ -266,9 +267,9 @@ pub trait FunctionType : Type {
         }
     }
 
-    fn get_param_types(&self) -> Vec<TypeRef> {
+    fn get_param_types(&self) -> Vec<LLVMTypeRef> {
         let params_count = self.count_param_types();
-        let mut buf : Vec<TypeRef> = Vec::with_capacity(params_count as usize);
+        let mut buf : Vec<LLVMTypeRef> = Vec::with_capacity(params_count as usize);
         let p = buf.as_mut_ptr();
         unsafe {
             std::mem::forget(buf);
@@ -278,23 +279,23 @@ pub trait FunctionType : Type {
     }
 }
 
-new_ref_type!(FunctionTypeRef for TypeRef implementing Type, FunctionType, TypeCtor, FunctionTypeCtor);
+new_ref_type!(FunctionTypeRef for LLVMTypeRef implementing Type, FunctionType, TypeCtor, FunctionTypeCtor);
 
 pub trait StructTypeCtor : TypeCtor {
-    fn get_in_context(ctx: &context::Context, element_types: &[TypeRef], packed: bool) -> Self {
+    fn get_in_context(ctx: &context::Context, element_types: &mut [LLVMTypeRef], packed: bool) -> Self {
         unsafe {
             Self::from_ref(LLVMStructTypeInContext(ctx.to_ref(),
-                                                   element_types.as_ptr(),
+                                                   element_types.as_mut_ptr(),
                                                    element_types.len() as c_uint,
-                                                   packed as ::Bool))
+                                                   packed as LLVMBool))
         }
     }
 
-    fn get(element_types: &[TypeRef], packed: bool) -> Self {
+    fn get(element_types: &mut [LLVMTypeRef], packed: bool) -> Self {
         unsafe {
-            Self::from_ref(LLVMStructType(element_types.as_ptr(),
+            Self::from_ref(LLVMStructType(element_types.as_mut_ptr(),
                                           element_types.len() as c_uint,
-                                          packed as ::Bool))
+                                          packed as LLVMBool))
         }
     }
 
@@ -314,12 +315,12 @@ pub trait StructType : Type {
         String::from_utf8_lossy(buf.to_bytes()).into_owned()
     }
 
-    fn set_body(&self, element_types: &[TypeRef], packed: bool) {
+    fn set_body(&self, element_types: &mut [LLVMTypeRef], packed: bool) {
         unsafe {
             LLVMStructSetBody(self.to_ref(),
-                              element_types.as_ptr(),
+                              element_types.as_mut_ptr(),
                               element_types.len() as c_uint,
-                              packed as ::Bool)
+                              packed as LLVMBool)
         }
     }
 
@@ -329,9 +330,9 @@ pub trait StructType : Type {
         }
     }
 
-    fn get_element_types(&self) -> Vec<TypeRef> {
+    fn get_element_types(&self) -> Vec<LLVMTypeRef> {
         let element_count = self.count_element_types();
-        let mut buf : Vec<TypeRef> = Vec::with_capacity(element_count as usize);
+        let mut buf : Vec<LLVMTypeRef> = Vec::with_capacity(element_count as usize);
         let p = buf.as_mut_ptr();
         unsafe {
             std::mem::forget(buf);
@@ -353,12 +354,12 @@ pub trait StructType : Type {
     }
 }
 
-new_ref_type!(StructTypeRef for TypeRef implementing Type, StructType, TypeCtor, StructTypeCtor);
+new_ref_type!(StructTypeRef for LLVMTypeRef implementing Type, StructType, TypeCtor, StructTypeCtor);
 
 pub trait SequentialTypeCtor : TypeCtor {}
 
 pub trait SequentialType : Type {
-    fn get_element_type(&self) -> TypeRef {
+    fn get_element_type(&self) -> LLVMTypeRef {
         unsafe {
             LLVMGetElementType(self.to_ref())
         }
@@ -416,7 +417,7 @@ pub trait VectorType : SequentialType {
     }
 }
 
-new_ref_type!(ArrayTypeRef for TypeRef
+new_ref_type!(ArrayTypeRef for LLVMTypeRef
               implementing
               Type,
               SequentialType,
@@ -425,7 +426,7 @@ new_ref_type!(ArrayTypeRef for TypeRef
               SequentialTypeCtor,
               ArrayTypeCtor);
 
-new_ref_type!(PointerTypeRef for TypeRef
+new_ref_type!(PointerTypeRef for LLVMTypeRef
               implementing
               Type,
               SequentialType,
@@ -434,7 +435,7 @@ new_ref_type!(PointerTypeRef for TypeRef
               SequentialTypeCtor,
               PointerTypeCtor);
 
-new_ref_type!(VectorTypeRef for TypeRef
+new_ref_type!(VectorTypeRef for LLVMTypeRef
               implementing
               Type,
               SequentialType,
@@ -491,305 +492,6 @@ pub trait X86MMXTypeCtor : TypeCtor {
 
 pub trait X86MMXType {}
 
-new_ref_type!(VoidTypeRef for TypeRef implementing Type, VoidType, TypeCtor, VoidTypeCtor);
-new_ref_type!(LabelTypeRef for TypeRef implementing Type, LabelType, TypeCtor, LabelTypeCtor);
-new_ref_type!(X86MMXTypeRef for TypeRef implementing Type, X86MMXType, TypeCtor, X86MMXTypeCtor);
-
-pub mod ffi {
-    use ::Bool;
-    use core::*;
-    use libc::{c_char, c_uint};
-
-    #[link(name = "LLVMCore")]
-    extern {
-        pub fn LLVMGetTypeKind(Ty: TypeRef) -> TypeKind;
-
-        /**
-         * Whether the type has a known size.
-         *
-         * Things that don't have a size are abstract types, labels, and void.
-         */
-        pub fn LLVMTypeIsSized(Ty: TypeRef) -> Bool;
-
-        /**
-         * Obtain the context to which this type instance is associated.
-         */
-        pub fn LLVMGetTypeContext(Ty: TypeRef) -> ContextRef;
-
-        /**
-         * Dump a representation of a type to stderr.
-         */
-        pub fn LLVMDumpType(Val: TypeRef);
-
-        /**
-         * Return a string representation of the type. Use
-         * LLVMDisposeMessage to free the string.
-         */
-        pub fn LLVMPrintTypeToString(Val: TypeRef) -> *const c_char;
-
-        /**
-         * Obtain an integer type from a context with specified bit width.
-         */
-        pub fn LLVMInt1TypeInContext(C: ContextRef) -> TypeRef;
-        pub fn LLVMInt8TypeInContext(C: ContextRef) -> TypeRef;
-        pub fn LLVMInt16TypeInContext(C: ContextRef) -> TypeRef;
-        pub fn LLVMInt32TypeInContext(C: ContextRef) -> TypeRef;
-        pub fn LLVMInt64TypeInContext(C: ContextRef) -> TypeRef;
-        pub fn LLVMIntTypeInContext(C: ContextRef, NumBits: c_uint) -> TypeRef;
-
-        /**
-         * Obtain an integer type from the global context with a specified bit
-         * width.
-         */
-        pub fn LLVMInt1Type() -> TypeRef;
-        pub fn LLVMInt8Type() -> TypeRef;
-        pub fn LLVMInt16Type() -> TypeRef;
-        pub fn LLVMInt32Type() -> TypeRef;
-        pub fn LLVMInt64Type() -> TypeRef;
-        pub fn LLVMIntType(NumBits: c_uint) -> TypeRef;
-
-        pub fn LLVMGetIntTypeWidth(IntegerTy: TypeRef) -> c_uint;
-
-        /**
-         * Obtain a 16-bit floating point type from a context.
-         */
-        pub fn LLVMHalfTypeInContext(C: ContextRef) -> TypeRef;
-
-        /**
-         * Obtain a 32-bit floating point type from a context.
-         */
-        pub fn LLVMFloatTypeInContext(C: ContextRef) -> TypeRef;
-
-        /**
-         * Obtain a 64-bit floating point type from a context.
-         */
-        pub fn LLVMDoubleTypeInContext(C: ContextRef) -> TypeRef;
-
-        /**
-         * Obtain a 80-bit floating point type (X87) from a context.
-         */
-        pub fn LLVMX86FP80TypeInContext(C: ContextRef) -> TypeRef;
-
-        /**
-         * Obtain a 128-bit floating point type (112-bit mantissa) from a
-         * context.
-         */
-        pub fn LLVMFP128TypeInContext(C: ContextRef) -> TypeRef;
-
-        /**
-         * Obtain a 128-bit floating point type (two 64-bits) from a context.
-         */
-        pub fn LLVMPPCFP128TypeInContext(C: ContextRef) -> TypeRef;
-
-        /**
-         * Obtain a floating point type from the global context.
-         *
-         * These map to the functions in this group of the same name.
-         */
-        pub fn LLVMHalfType() -> TypeRef;
-        pub fn LLVMFloatType() -> TypeRef;
-        pub fn LLVMDoubleType() -> TypeRef;
-        pub fn LLVMX86FP80Type() -> TypeRef;
-        pub fn LLVMFP128Type() -> TypeRef;
-        pub fn LLVMPPCFP128Type() -> TypeRef;
-
-        /* Operations on function types */
-
-        /**
-         * Obtain a function type consisting of a specified signature.
-         *
-         * The function is defined as a tuple of a return Type, a list of
-         * parameter types, and whether the function is variadic.
-         */
-        pub fn LLVMFunctionType(ReturnType: TypeRef,
-                                ParamTypes: *const TypeRef,
-                                ParamCount: c_uint,
-                                IsVarArg: Bool)
-                                -> TypeRef;
-
-        /**
-         * Returns whether a function type is variadic.
-         */
-        pub fn LLVMIsFunctionVarArg(FunctionTy: TypeRef) -> Bool;
-
-        /**
-         * Obtain the Type this function Type returns.
-         */
-        pub fn LLVMGetReturnType(FunctionTy: TypeRef) -> TypeRef;
-
-        /**
-         * Obtain the number of parameters this function accepts.
-         */
-        pub fn LLVMCountParamTypes(FunctionTy: TypeRef) -> c_uint;
-
-        /**
-         * Obtain the types of a function's parameters.
-         *
-         * The Dest parameter should point to a pre-allocated array of
-         * LLVMTypeRef at least LLVMCountParamTypes() large. On return, the
-         * first LLVMCountParamTypes() entries in the array will be populated
-         * with LLVMTypeRef instances.
-         *
-         * @param FunctionTy The function type to operate on.
-         * @param Dest Memory address of an array to be filled with result.
-         */
-        pub fn LLVMGetParamTypes(FunctionTy: TypeRef, Dest: *mut TypeRef);
-
-
-        /* Operations on struct types */
-
-        /**
-         * Create a new structure type in a context.
-         *
-         * A structure is specified by a list of inner elements/types and
-         * whether these can be packed together.
-         */
-        pub fn LLVMStructTypeInContext(C: ContextRef,
-                                       ElementTypes: *const TypeRef,
-                                       ElementCount: c_uint,
-                                       Packed: Bool)
-                                       -> TypeRef;
-
-        /**
-         * Create a new structure type in the global context.
-         */
-        pub fn LLVMStructType(ElementTypes: *const TypeRef,
-                              ElementCount: c_uint,
-                              Packed: Bool)
-                              -> TypeRef;
-
-        /**
-         * Create an empty structure in a context having a specified name.
-         */
-        pub fn LLVMStructCreateNamed(C: ContextRef,
-                                     Name: *const c_char)
-                                     -> TypeRef;
-
-        /**
-         * Obtain the name of a structure.
-         */
-        pub fn LLVMGetStructName(StructTy: TypeRef) -> *const c_char;
-
-        /**
-         * Set the contents of a structure type.
-         */
-        pub fn LLVMStructSetBody(StructTy: TypeRef,
-                                 ElementTypes: *const TypeRef,
-                                 ElementCount: c_uint,
-                                 Packed: Bool);
-
-        /**
-         * Get the number of elements defined inside the structure.
-         */
-        pub fn LLVMCountStructElementTypes(StructTy: TypeRef) -> c_uint;
-
-        /**
-         * Get the elements within a structure.
-         *
-         * The function is passed the address of a pre-allocated array of
-         * LLVMTypeRef at least LLVMCountStructElementTypes() long. After
-         * invocation, this array will be populated with the structure's
-         * elements. The objects in the destination array will have a lifetime
-         * of the structure type itself, which is the lifetime of the context it
-         * is contained in.
-         */
-        pub fn LLVMGetStructElementTypes(StructTy: TypeRef,
-                                         Dest: *mut TypeRef);
-
-        /**
-         * Determine whether a structure is packed.
-         */
-        pub fn LLVMIsPackedStruct(StructTy: TypeRef) -> Bool;
-
-        /**
-         * Determine whether a structure is opaque.
-         */
-        pub fn LLVMIsOpaqueStruct(StructTy: TypeRef) -> Bool;
-
-
-        /* Operations on array, pointer, and vector types (sequence types) */
-
-
-        /**
-         * Obtain the type of elements within a sequential type.
-         *
-         * This works on array, vector, and pointer types.
-         */
-        pub fn LLVMGetElementType(Ty: TypeRef) -> TypeRef;
-
-        /**
-         * Create a fixed size array type that refers to a specific type.
-         *
-         * The created type will exist in the context that its element type
-         * exists in.
-         */
-        pub fn LLVMArrayType(ElementType: TypeRef, ElementCount: c_uint)
-                             -> TypeRef;
-
-        /**
-         * Obtain the length of an array type.
-         *
-         * This only works on types that represent arrays.
-         */
-        pub fn LLVMGetArrayLength(ArrayTy: TypeRef) -> c_uint;
-
-        /**
-         * Create a pointer type that points to a defined type.
-         *
-         * The created type will exist in the context that its pointee type
-         * exists in.
-         */
-        pub fn LLVMPointerType(ElementType: TypeRef, AddressSpace: c_uint)
-                               -> TypeRef;
-
-        /**
-         * Obtain the address space of a pointer type.
-         *
-         * This only works on types that represent pointers.
-         */
-        pub fn LLVMGetPointerAddressSpace(PointerTy: TypeRef) -> c_uint;
-
-        /**
-         * Create a vector type that contains a defined type and has a specific
-         * number of elements.
-         *
-         * The created type will exist in the context thats its element type
-         * exists in.
-         */
-        pub fn LLVMVectorType(ElementType: TypeRef, ElementCount: c_uint)
-                              -> TypeRef;
-
-        /**
-         * Obtain the number of elements in a vector type.
-         *
-         * This only works on types that represent vectors.
-         */
-        pub fn LLVMGetVectorSize(VectorTy: TypeRef) -> c_uint;
-
-
-        /* Operations on other types */
-
-        /**
-         * Create a void type in a context.
-         */
-        pub fn LLVMVoidTypeInContext(C: ContextRef) -> TypeRef;
-
-        /**
-         * Create a label type in a context.
-         */
-        pub fn LLVMLabelTypeInContext(C: ContextRef) -> TypeRef;
-
-        /**
-         * Create a X86 MMX type in a context.
-         */
-        pub fn LLVMX86MMXTypeInContext(C: ContextRef) -> TypeRef;
-
-        /**
-         * These are similar to the above functions except they operate on the
-         * global context.
-         */
-        pub fn LLVMVoidType() -> TypeRef;
-        pub fn LLVMLabelType() -> TypeRef;
-        pub fn LLVMX86MMXType() -> TypeRef;
-    }
-}
+new_ref_type!(VoidTypeRef for LLVMTypeRef implementing Type, VoidType, TypeCtor, VoidTypeCtor);
+new_ref_type!(LabelTypeRef for LLVMTypeRef implementing Type, LabelType, TypeCtor, LabelTypeCtor);
+new_ref_type!(X86MMXTypeRef for LLVMTypeRef implementing Type, X86MMXType, TypeCtor, X86MMXTypeCtor);
