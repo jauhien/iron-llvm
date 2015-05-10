@@ -9,7 +9,6 @@
 // Core LLVM: Context
 // LLVM-C header Core.h
 
-use llvm_sys::*;
 use llvm_sys::prelude::*;
 use llvm_sys::core::*;
 

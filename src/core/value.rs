@@ -18,7 +18,8 @@ use llvm_sys::prelude::*;
 use llvm_sys::core::*;
 
 use ::{LLVMRef, LLVMRefCtor};
-use core::types::{Type, IntType, RealType};
+use core::module;
+use core::types::{Type, IntType, FunctionType, RealType};
 
 pub trait ValueCtor : LLVMRefCtor<LLVMValueRef> {}
 
@@ -314,6 +315,14 @@ new_ref_type!(RealConstRef for LLVMValueRef
               RealConst
               );
 
+pub trait FunctionCtor : ValueCtor {
+    fn new(module: &mut module::Module, name: &str, ty: &FunctionType) -> Self {
+        unsafe {
+            Self::from_ref(LLVMAddFunction(module.to_ref(), name.as_ptr() as *const c_char, ty.to_ref()))
+        }
+    }
+}
+
 pub trait Function : Const {
     fn get_intrinsic_id(&self) -> u32 {
         unsafe {
@@ -389,7 +398,9 @@ new_ref_type!(FunctionRef for LLVMValueRef
               Value,
               User,
               Const,
-              Function
+              Function,
+              ValueCtor,
+              FunctionCtor
               );
 
 //TODO Add args back iter

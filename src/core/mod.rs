@@ -10,5 +10,6 @@
 // LLVM-C header Core.h
 
 pub mod context;
+pub mod module;
 pub mod types;
 pub mod value;

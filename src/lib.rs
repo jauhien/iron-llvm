@@ -31,6 +31,7 @@ use core::types::{Type, IntType, IntTypeCtor, FunctionType, FunctionTypeCtor, St
 
 macro_rules! new_ref_type(
     ($ref_type:ident for $llvm_ref_type:ident implementing $($base_trait:ty),+) => (
+        #[derive(Copy, Clone)]
         pub enum $ref_type {
             Rf($llvm_ref_type)
         }
