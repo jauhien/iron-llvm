@@ -18,6 +18,8 @@ use llvm_sys::prelude::*;
 use llvm_sys::core::*;
 
 use ::{LLVMRef, LLVMRefCtor};
+use core::basic_block::{BasicBlock, BasicBlocksIter};
+use core::context::Context;
 use core::module;
 use core::types::{Type, IntType, FunctionType, RealType};
 
@@ -389,6 +391,44 @@ pub trait Function : Const {
             func: self.to_ref(),
             pos: 0,
             size: 0
+        }
+    }
+
+    fn count_basic_blocks(&self) -> u32 {
+        unsafe {
+            LLVMCountBasicBlocks(self.to_ref())
+        }
+    }
+
+    fn basic_blocks_iter(&self) -> BasicBlocksIter {
+        let first = unsafe {
+            LLVMGetFirstBasicBlock(self.to_ref())
+        };
+
+        let current = if first.is_null() {
+            None
+        } else {
+            Some(first)
+        };
+
+        BasicBlocksIter{current: current}
+    }
+
+    fn get_entry(&self) -> LLVMBasicBlockRef {
+        unsafe {
+            LLVMGetEntryBasicBlock(self.to_ref())
+        }
+    }
+
+    fn append_basic_block_in_context(&self, context: &mut Context, name: &str)  -> LLVMBasicBlockRef {
+        unsafe {
+            LLVMAppendBasicBlockInContext(context.to_ref(), self.to_ref(), name.as_ptr() as *const c_char)
+        }
+    }
+
+    fn append_basic_block(&self, name: &str)  -> LLVMBasicBlockRef {
+        unsafe {
+            LLVMAppendBasicBlock(self.to_ref(), name.as_ptr() as *const c_char)
         }
     }
 }

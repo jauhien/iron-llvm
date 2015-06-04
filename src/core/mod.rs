@@ -9,6 +9,7 @@
 // Core LLVM
 // LLVM-C header Core.h
 
+pub mod basic_block;
 pub mod context;
 pub mod module;
 pub mod types;
