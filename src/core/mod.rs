@@ -11,6 +11,7 @@
 
 pub mod basic_block;
 pub mod context;
+pub mod instruction;
 pub mod module;
 pub mod types;
 pub mod value;

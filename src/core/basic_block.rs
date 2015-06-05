@@ -19,6 +19,7 @@ use llvm_sys::core::*;
 
 use ::{LLVMRef, LLVMRefCtor};
 use core::context::Context;
+use core::instruction::InstructionRef;
 use core::value::{FunctionRef, Value};
 
 pub trait BasicBlockCtor : LLVMRefCtor<LLVMBasicBlockRef> {
@@ -40,7 +41,7 @@ pub trait BasicBlock : LLVMRef<LLVMBasicBlockRef> + Value {
         }
     }
 
-    // TODO: change return type to instruction, when it will be introduced
+    // TODO: change return type to terminator, when it will be introduced
     fn get_terminator(&self) -> LLVMValueRef {
         unsafe {
             LLVMGetBasicBlockTerminator(self.to_ref())
@@ -83,17 +84,15 @@ pub trait BasicBlock : LLVMRef<LLVMBasicBlockRef> + Value {
         }
     }
 
-    // TODO: change return type to instruction, when it will be introduced
-    fn get_first_instruction(&self) -> LLVMValueRef {
+    fn get_first_instruction(&self) -> InstructionRef {
         unsafe {
-            LLVMGetFirstInstruction(self.to_ref())
+            InstructionRef::from_ref(LLVMGetFirstInstruction(self.to_ref()))
         }
     }
 
-    // TODO: change return type to instruction, when it will be introduced
-    fn get_last_instruction(&self) -> LLVMValueRef {
+    fn get_last_instruction(&self) -> InstructionRef {
         unsafe {
-            LLVMGetLastInstruction(self.to_ref())
+            InstructionRef::from_ref(LLVMGetLastInstruction(self.to_ref()))
         }
     }
 }
