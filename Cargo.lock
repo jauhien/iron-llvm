@@ -1,5 +1,5 @@
 [root]
-name = "iron-llvm"
+name = "iron_llvm"
 version = "0.0.1"
 dependencies = [
  "llvm_sys 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
