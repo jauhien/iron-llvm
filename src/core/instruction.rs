@@ -39,10 +39,10 @@ pub trait Instruction : Value + ValueCtor {
         }
     }
 
-    // TODO make this function safe and somehow inform compiler about
-    // ref invalidation
-    unsafe fn erase_from_parent(&mut self) {
-        LLVMInstructionEraseFromParent(self.to_ref())
+    fn erase_from_parent(mut self) {
+        unsafe {
+            LLVMInstructionEraseFromParent(self.to_ref())
+        }
     }
 
     fn get_opcode(&self) -> LLVMOpcode {
@@ -60,7 +60,7 @@ new_ref_type!(InstructionRef for LLVMValueRef
               );
 
 pub trait PHINode : Instruction {
-    fn add_incoming(&self, incoming_values: &mut [LLVMValueRef], incoming_blocks: &mut [LLVMBasicBlockRef]) {
+    fn add_incoming(&mut self, incoming_values: &mut [LLVMValueRef], incoming_blocks: &mut [LLVMBasicBlockRef]) {
         assert!(incoming_values.len() == incoming_blocks.len());
         unsafe {
             LLVMAddIncoming(self.to_ref(),
