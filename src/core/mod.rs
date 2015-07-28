@@ -9,6 +9,10 @@
 // Core LLVM
 // LLVM-C header Core.h
 
+pub use self::builder::Builder;
+pub use self::context::Context;
+pub use self::module::Module;
+
 pub mod basic_block;
 pub mod builder;
 pub mod context;

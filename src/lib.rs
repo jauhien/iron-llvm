@@ -26,7 +26,7 @@ use libc::c_uint;
 use llvm_sys::prelude::*;
 use llvm_sys::core::*;
 
-use core::*;
+use core::{context, types};
 use core::types::{Type, IntType, IntTypeCtor, FunctionType, FunctionTypeCtor, StructType, StructTypeCtor};
 
 macro_rules! new_ref_type(
