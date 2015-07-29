@@ -10,6 +10,7 @@
 // LLVM-C header Core.h
 
 use std;
+use std::ffi::CString;
 
 use libc::{c_char, c_uint};
 
@@ -300,6 +301,7 @@ pub trait StructTypeCtor : TypeCtor {
     }
 
     fn new_named(ctx: &context::Context, name: &str) -> Self {
+        let name = CString::new(name).unwrap();
         unsafe {
             Self::from_ref(LLVMStructCreateNamed(ctx.to_ref(),
                                                  name.as_ptr() as *const c_char))

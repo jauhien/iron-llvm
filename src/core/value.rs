@@ -10,6 +10,7 @@
 // LLVM-C header Core.h
 
 use std;
+use std::ffi::CString;
 
 use libc::{c_char, c_uint, c_ulonglong};
 
@@ -41,6 +42,7 @@ pub trait Value : LLVMRef<LLVMValueRef> {
     }
 
     fn set_name(&self, name: &str) {
+        let name = CString::new(name).unwrap();
         unsafe {
             LLVMSetValueName(self.to_ref(), name.as_ptr() as *const i8)
         }
@@ -248,6 +250,7 @@ pub trait IntConstCtor : ConstCtor<IntType> {
     }
 
     fn get_from_string(ty: &IntType, text: &str, radix: u8) -> Self {
+        let text = CString::new(text).unwrap();
         unsafe {
             Self::from_ref(LLVMConstIntOfString(ty.to_ref(),
                                                 text.as_ptr() as *const c_char,
@@ -289,6 +292,7 @@ pub trait RealConstCtor : ConstCtor<RealType> {
     }
 
     fn get_from_string(ty: &RealType, text: &str) -> Self {
+        let text = CString::new(text).unwrap();
         unsafe {
             Self::from_ref(LLVMConstRealOfString(ty.to_ref(), text.as_ptr() as *const c_char))
         }
@@ -319,6 +323,7 @@ new_ref_type!(RealConstRef for LLVMValueRef
 
 pub trait FunctionCtor : ValueCtor {
     fn new(module: &mut module::Module, name: &str, ty: &FunctionType) -> Self {
+        let name = CString::new(name).unwrap();
         unsafe {
             Self::from_ref(LLVMAddFunction(module.to_ref(), name.as_ptr() as *const c_char, ty.to_ref()))
         }
@@ -421,12 +426,14 @@ pub trait Function : Const {
     }
 
     fn append_basic_block_in_context(&self, context: &mut Context, name: &str)  -> LLVMBasicBlockRef {
+        let name = CString::new(name).unwrap();
         unsafe {
             LLVMAppendBasicBlockInContext(context.to_ref(), self.to_ref(), name.as_ptr() as *const c_char)
         }
     }
 
     fn append_basic_block(&self, name: &str)  -> LLVMBasicBlockRef {
+        let name = CString::new(name).unwrap();
         unsafe {
             LLVMAppendBasicBlock(self.to_ref(), name.as_ptr() as *const c_char)
         }

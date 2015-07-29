@@ -10,6 +10,7 @@
 // LLVM-C header Core.h
 
 use std;
+use std::ffi::CString;
 
 use libc::c_char;
 
@@ -49,12 +50,14 @@ pub trait BasicBlock : LLVMRef<LLVMBasicBlockRef> + Value {
     }
 
     fn insert_basic_block_in_context(&self, context: &mut Context, name: &str)  -> LLVMBasicBlockRef {
+        let name = CString::new(name).unwrap();
         unsafe {
             LLVMInsertBasicBlockInContext(context.to_ref(), self.to_ref(), name.as_ptr() as *const c_char)
         }
     }
 
     fn insert_basic_block(&self, name: &str)  -> LLVMBasicBlockRef {
+        let name = CString::new(name).unwrap();
         unsafe {
             LLVMInsertBasicBlock(self.to_ref(), name.as_ptr() as *const c_char)
         }

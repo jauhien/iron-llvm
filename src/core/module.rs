@@ -10,6 +10,7 @@
 // LLVM-C header Core.h
 
 use std;
+use std::ffi::CString;
 
 use libc::c_char;
 
@@ -27,6 +28,7 @@ pub struct Module {
 //TODO: add print to file and metadata methods
 impl Module {
     pub fn new(module_id: &str) -> Module {
+        let module_id = CString::new(module_id).unwrap();
         unsafe {
             Module {
                 module: LLVMModuleCreateWithName(module_id.as_ptr() as *const c_char)
@@ -35,6 +37,7 @@ impl Module {
     }
 
     pub fn new_in_context(module_id: &str, ctx: &context::Context) -> Module {
+        let module_id = CString::new(module_id).unwrap();
         unsafe {
             Module {
                 module: LLVMModuleCreateWithNameInContext(module_id.as_ptr() as *const c_char, ctx.to_ref())
@@ -50,6 +53,7 @@ impl Module {
     }
 
     pub fn set_data_layout(&self, triple: &str) {
+        let triple = CString::new(triple).unwrap();
         unsafe {
             LLVMSetDataLayout(self.to_ref(), triple.as_ptr() as *const c_char);
         }
@@ -63,6 +67,7 @@ impl Module {
     }
 
     pub fn set_target(&self, triple: &str) {
+        let triple = CString::new(triple).unwrap();
         unsafe {
             LLVMSetTarget(self.to_ref(), triple.as_ptr() as *const c_char);
         }
@@ -85,6 +90,7 @@ impl Module {
     }
 
     pub fn set_inline_asm(&self, asm: &str) {
+        let asm = CString::new(asm).unwrap();
         unsafe {
             LLVMSetModuleInlineAsm(self.to_ref(), asm.as_ptr() as *const c_char);
         }
@@ -98,6 +104,7 @@ impl Module {
     }
 
     pub fn get_type_by_name(&self, name: &str) -> Option<LLVMTypeRef> {
+        let name = CString::new(name).unwrap();
         let ty = unsafe {
             LLVMGetTypeByName(self.to_ref(), name.as_ptr() as *const c_char)
         };
@@ -109,6 +116,7 @@ impl Module {
     }
 
     pub fn get_function_by_name(&self, name: &str) -> Option<FunctionRef> {
+        let name = CString::new(name).unwrap();
         let function = unsafe {
             LLVMGetNamedFunction(self.to_ref(), name.as_ptr() as *const c_char)
         };
