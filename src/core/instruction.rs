@@ -20,26 +20,27 @@ use llvm_sys::core::*;
 use ::{LLVMRef, LLVMRefCtor};
 use core::value::{Value, ValueCtor};
 
-pub trait Instruction : Value + ValueCtor {
+pub trait Instruction : Value {
     fn get_parent(&self) -> LLVMBasicBlockRef {
         unsafe {
             LLVMGetInstructionParent(self.to_ref())
         }
     }
 
-    fn get_next(&self) -> Self {
+    fn get_next(&self) -> InstructionRef {
         unsafe {
-            Self::from_ref(LLVMGetNextInstruction(self.to_ref()))
+            InstructionRef::from_ref(LLVMGetNextInstruction(self.to_ref()))
         }
     }
 
-    fn get_previous(&self) -> Self {
+    fn get_previous(&self) -> InstructionRef {
         unsafe {
-            Self::from_ref(LLVMGetPreviousInstruction(self.to_ref()))
+            InstructionRef::from_ref(LLVMGetPreviousInstruction(self.to_ref()))
         }
     }
 
-    fn erase_from_parent(mut self) {
+    //TODO fix ownership
+    fn erase_from_parent(&mut self) {
         unsafe {
             LLVMInstructionEraseFromParent(self.to_ref())
         }
