@@ -12,11 +12,13 @@
 pub use self::builder::Builder;
 pub use self::context::Context;
 pub use self::module::Module;
+pub use self::pass_manager::{FunctionPassManager, PassManager};
 
 pub mod basic_block;
 pub mod builder;
 pub mod context;
 pub mod instruction;
 pub mod module;
+pub mod pass_manager;
 pub mod types;
 pub mod value;
