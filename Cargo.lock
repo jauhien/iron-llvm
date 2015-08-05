@@ -2,6 +2,7 @@
 name = "iron_llvm"
 version = "0.0.1"
 dependencies = [
+ "libc 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "llvm_sys 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

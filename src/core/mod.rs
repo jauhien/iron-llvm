@@ -13,6 +13,7 @@ pub use self::builder::Builder;
 pub use self::context::Context;
 pub use self::module::Module;
 pub use self::pass_manager::{FunctionPassManager, PassManager};
+pub use self::value::{Function, Value};
 
 pub mod basic_block;
 pub mod builder;

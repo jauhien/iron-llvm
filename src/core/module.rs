@@ -22,7 +22,8 @@ use core::context;
 use core::value::FunctionRef;
 
 pub struct Module {
-    module: LLVMModuleRef
+    module: LLVMModuleRef,
+    owned: bool
 }
 
 //TODO: add print to file and metadata methods
@@ -31,7 +32,8 @@ impl Module {
         let module_id = CString::new(module_id).unwrap();
         unsafe {
             Module {
-                module: LLVMModuleCreateWithName(module_id.as_ptr() as *const c_char)
+                module: LLVMModuleCreateWithName(module_id.as_ptr() as *const c_char),
+                owned: true
             }
         }
     }
@@ -40,7 +42,8 @@ impl Module {
         let module_id = CString::new(module_id).unwrap();
         unsafe {
             Module {
-                module: LLVMModuleCreateWithNameInContext(module_id.as_ptr() as *const c_char, ctx.to_ref())
+                module: LLVMModuleCreateWithNameInContext(module_id.as_ptr() as *const c_char, ctx.to_ref()),
+                owned: true
             }
         }
     }
@@ -144,6 +147,10 @@ impl Module {
 
         FunctionIter{current: current}
     }
+
+    pub unsafe fn unown(&mut self) {
+        self.owned = false;
+    }
 }
 
 pub struct FunctionIter {
@@ -184,7 +191,8 @@ impl Clone for Module {
     fn clone(&self) -> Self {
         unsafe {
             Module {
-                module: LLVMCloneModule(self.to_ref())
+                module: LLVMCloneModule(self.to_ref()),
+                owned: true
             }
         }
     }
@@ -192,8 +200,10 @@ impl Clone for Module {
 
 impl Drop for Module {
     fn drop(&mut self) {
-        unsafe {
-            LLVMDisposeModule(self.to_ref());
+        if self.owned {
+            unsafe {
+                LLVMDisposeModule(self.to_ref());
+            }
         }
     }
 }

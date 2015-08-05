@@ -10,7 +10,6 @@
 #![allow(unused_imports)]
 
 #![feature(convert)]
-#![feature(libc)]
 
 #![feature(log_syntax)]
 #![feature(trace_macros)]
@@ -57,6 +56,8 @@ macro_rules! new_ref_type(
 );
 
 pub mod core;
+pub mod execution_engine;
+pub mod target;
 
 pub trait LLVMRef<Ref> {
     fn to_ref(&self) -> Ref;
@@ -151,4 +152,30 @@ fn it_works() {
 
     writeln!(&mut stderr, "========").unwrap();
     writeln!(&mut stderr, "").unwrap();
+}
+
+#[test]
+fn test_ee() {
+    let mut stderr = io::stderr();
+    let m = core::Module::new("test0");
+    let ee = execution_engine::ExecutionEngine::new(m);
+    match ee {
+        Ok(_) => writeln!(&mut stderr, "either: ok!").unwrap(),
+        Err(error) => writeln!(&mut stderr, "either: {:?}", error).unwrap()
+    }
+
+    let m = core::Module::new("test1");
+    let inter = execution_engine::ExecutionEngine::new_interpreter(m);
+    match inter {
+        Ok(_) => writeln!(&mut stderr, "interpreter: ok!").unwrap(),
+        Err(error) => writeln!(&mut stderr, "interpreter: {:?}", error).unwrap()
+    }
+
+    target::initilalize_native_target();
+    let m = core::Module::new("test2");
+    let inter = execution_engine::ExecutionEngine::new_jit_compiler(m, 0);
+    match inter {
+        Ok(_) => writeln!(&mut stderr, "jit: ok!").unwrap(),
+        Err(error) => writeln!(&mut stderr, "jit: {:?}", error).unwrap()
+    }
 }
