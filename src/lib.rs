@@ -157,25 +157,63 @@ fn it_works() {
 #[test]
 fn test_ee() {
     let mut stderr = io::stderr();
+
+    writeln!(&mut stderr, "").unwrap();
+    writeln!(&mut stderr, "========").unwrap();
+    writeln!(&mut stderr, "Testing execution engine").unwrap();
+
     let m = core::Module::new("test0");
     let ee = execution_engine::ExecutionEngine::new(m);
-    match ee {
-        Ok(_) => writeln!(&mut stderr, "either: ok!").unwrap(),
-        Err(error) => writeln!(&mut stderr, "either: {:?}", error).unwrap()
-    }
+    let (mut either, either_module) = match ee {
+        Ok((ee, module)) => {
+            writeln!(&mut stderr, "either: ok!").unwrap();
+            (ee, module)
+        },
+        Err(error) => {
+            panic!("either: {:?}", error)
+        }
+    };
 
     let m = core::Module::new("test1");
-    let inter = execution_engine::ExecutionEngine::new_interpreter(m);
-    match inter {
-        Ok(_) => writeln!(&mut stderr, "interpreter: ok!").unwrap(),
-        Err(error) => writeln!(&mut stderr, "interpreter: {:?}", error).unwrap()
-    }
+    let ee = execution_engine::ExecutionEngine::new_interpreter(m);
+    let (mut interpreter, interpreter_module) = match ee {
+        Ok((ee, module)) => {
+            writeln!(&mut stderr, "interpreter: ok!").unwrap();
+            (ee, module)
+        },
+        Err(error) => {
+            panic!("interpreter: {:?}", error)
+        }
+    };
 
     target::initilalize_native_target();
     let m = core::Module::new("test2");
-    let inter = execution_engine::ExecutionEngine::new_jit_compiler(m, 0);
-    match inter {
-        Ok(_) => writeln!(&mut stderr, "jit: ok!").unwrap(),
-        Err(error) => writeln!(&mut stderr, "jit: {:?}", error).unwrap()
+    let ee = execution_engine::ExecutionEngine::new_jit_compiler(m, 0);
+    let (mut jit, jit_module) = match ee {
+        Ok((ee, module)) => {
+            writeln!(&mut stderr, "jit: ok!").unwrap();
+            (ee, module)
+        },
+        Err(error) => {
+            panic!("jit: {:?}", error)
+        }
+    };
+
+    match either.remove_module(either_module) {
+        Ok(_) => writeln!(&mut stderr, "either module removed").unwrap(),
+        Err(error) => writeln!(&mut stderr, "{:?}", error).unwrap()
     }
+
+    match interpreter.remove_module(interpreter_module) {
+        Ok(_) => writeln!(&mut stderr, "interpreter module removed").unwrap(),
+        Err(error) => writeln!(&mut stderr, "{:?}", error).unwrap()
+    }
+
+    match jit.remove_module(jit_module) {
+        Ok(_) => writeln!(&mut stderr, "jit module removed").unwrap(),
+        Err(error) => writeln!(&mut stderr, "{:?}", error).unwrap()
+    }
+
+    writeln!(&mut stderr, "========").unwrap();
+    writeln!(&mut stderr, "").unwrap();
 }

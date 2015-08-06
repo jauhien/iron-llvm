@@ -55,7 +55,7 @@ impl Module {
         }
     }
 
-    pub fn set_data_layout(&self, triple: &str) {
+    pub fn set_data_layout(&mut self, triple: &str) {
         let triple = CString::new(triple).unwrap();
         unsafe {
             LLVMSetDataLayout(self.to_ref(), triple.as_ptr() as *const c_char);
@@ -69,7 +69,7 @@ impl Module {
         }
     }
 
-    pub fn set_target(&self, triple: &str) {
+    pub fn set_target(&mut self, triple: &str) {
         let triple = CString::new(triple).unwrap();
         unsafe {
             LLVMSetTarget(self.to_ref(), triple.as_ptr() as *const c_char);
@@ -92,7 +92,7 @@ impl Module {
         }
     }
 
-    pub fn set_inline_asm(&self, asm: &str) {
+    pub fn set_inline_asm(&mut self, asm: &str) {
         let asm = CString::new(asm).unwrap();
         unsafe {
             LLVMSetModuleInlineAsm(self.to_ref(), asm.as_ptr() as *const c_char);
@@ -184,6 +184,15 @@ impl Iterator for FunctionIter {
 impl LLVMRef<LLVMModuleRef> for Module {
     fn to_ref(&self) -> LLVMModuleRef {
         self.module
+    }
+}
+
+impl LLVMRefCtor<LLVMModuleRef> for Module {
+    unsafe fn from_ref(module_ref : LLVMModuleRef) -> Module {
+        Module{
+            module: module_ref,
+            owned: false
+        }
     }
 }
 

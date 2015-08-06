@@ -22,12 +22,22 @@ use ::{LLVMRef, LLVMRefCtor};
 use core;
 use execution_engine::GenericValue;
 
+pub struct FrozenModule {
+    module: core::Module
+}
+
+impl FrozenModule {
+    pub fn get(&self) -> &core::Module {
+        &self.module
+    }
+}
+
 pub struct ExecutionEngine {
     ee: LLVMExecutionEngineRef
 }
 
 impl ExecutionEngine {
-    pub fn new(mut module: core::Module) -> Result<ExecutionEngine, String> {
+    pub fn new(mut module: core::Module) -> Result<(ExecutionEngine, FrozenModule), String> {
         let mut ee = 0 as LLVMExecutionEngineRef;
         let mut error = 0 as *mut c_char;
         unsafe {
@@ -38,12 +48,12 @@ impl ExecutionEngine {
                 LLVMDisposeMessage(error);
                 Err(result)
             } else {
-                Ok(ExecutionEngine {ee:ee})
+                Ok((ExecutionEngine {ee:ee}, FrozenModule {module:module}))
             }
         }
     }
 
-    pub fn new_interpreter(mut module: core::Module) -> Result<ExecutionEngine, String> {
+    pub fn new_interpreter(mut module: core::Module) -> Result<(ExecutionEngine, FrozenModule), String> {
         let mut ee = 0 as LLVMExecutionEngineRef;
         let mut error = 0 as *mut c_char;
         unsafe {
@@ -54,12 +64,12 @@ impl ExecutionEngine {
                 LLVMDisposeMessage(error);
                 Err(result)
             } else {
-                Ok(ExecutionEngine {ee:ee})
+                Ok((ExecutionEngine {ee:ee}, FrozenModule {module:module}))
             }
         }
     }
 
-    pub fn new_jit_compiler(mut module: core::Module, opt_level: u32) -> Result<ExecutionEngine, String> {
+    pub fn new_jit_compiler(mut module: core::Module, opt_level: u32) -> Result<(ExecutionEngine, FrozenModule), String> {
         let mut ee = 0 as LLVMExecutionEngineRef;
         let mut error = 0 as *mut c_char;
         unsafe {
@@ -70,7 +80,31 @@ impl ExecutionEngine {
                 LLVMDisposeMessage(error);
                 Err(result)
             } else {
-                Ok(ExecutionEngine {ee:ee})
+                Ok((ExecutionEngine {ee:ee}, FrozenModule {module:module}))
+            }
+        }
+    }
+
+    pub fn add_module(&mut self, mut module: core::Module) -> FrozenModule {
+        unsafe {
+            LLVMAddModule(self.to_ref(), module.to_ref());
+            module.unown();
+        }
+        FrozenModule {module: module}
+    }
+
+    pub fn remove_module(&mut self, module: FrozenModule) -> Result<core::Module, String> {
+        let mut module_ref = 0 as LLVMModuleRef;
+        let mut error = 0 as *mut c_char;
+        unsafe {
+            if LLVMRemoveModule(self.to_ref(), module.get().to_ref(), &mut module_ref, &mut error) > 0 {
+                let cstr_buf = std::ffi::CStr::from_ptr(error);
+                let result = String::from_utf8_lossy(cstr_buf.to_bytes()).into_owned();
+                LLVMDisposeMessage(error);
+                Err(result)
+            }
+            else {
+                Ok(core::Module::from_ref(module_ref))
             }
         }
     }
@@ -90,13 +124,6 @@ impl ExecutionEngine {
     pub fn run_function<T:core::Function>(&mut self, f: &T, args: &mut [LLVMGenericValueRef]) -> GenericValue {
         unsafe {
             GenericValue::from_ref(LLVMRunFunction(self.to_ref(), f.to_ref(), args.len() as c_uint, args.as_mut_ptr()))
-        }
-    }
-
-    pub fn add_module(&self, mut module: core::Module) {
-        unsafe {
-            LLVMAddModule(self.to_ref(), module.to_ref());
-            module.unown();
         }
     }
 

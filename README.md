@@ -6,7 +6,6 @@ It is the very beginning of work on safe bindings. Pull requests are welcome.
 
 TODO list (random points to do in the nearest time):
 
-* module handling in ExecutionEngine
 * memory manager for ExecutionEngine
 * full ExecutionEngine API
 * ORC
