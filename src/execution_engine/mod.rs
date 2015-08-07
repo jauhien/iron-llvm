@@ -9,8 +9,10 @@
 // LLVM Execution Engine
 // LLVM-C header ExecutionEngine.h
 
-pub use self::execution_engine::ExecutionEngine;
+pub use self::execution_engine::{ExecutionEngine, MCJITBuilder};
 pub use self::generic_value::GenericValue;
+pub use self::memory_manager::{MCJITMemoryManager, SimpleMCJITMemoryManager, SimpleMCJITMemoryManagerImpl};
 
 pub mod execution_engine;
 pub mod generic_value;
+pub mod memory_manager;

@@ -12,15 +12,17 @@
 use std;
 use std::ffi::CString;
 
-use libc::{c_char, c_uint};
+use libc::{c_char, c_uint, size_t};
 
 use llvm_sys::prelude::*;
 use llvm_sys::core::*;
 use llvm_sys::execution_engine::*;
+use llvm_sys::target_machine::*;
 
 use ::{LLVMRef, LLVMRefCtor};
 use core;
 use execution_engine::GenericValue;
+use execution_engine::MCJITMemoryManager;
 
 pub struct FrozenModule {
     module: core::Module
@@ -33,7 +35,8 @@ impl FrozenModule {
 }
 
 pub struct ExecutionEngine {
-    ee: LLVMExecutionEngineRef
+    ee: LLVMExecutionEngineRef,
+    _memory_manager: Option<Box<MCJITMemoryManager>>
 }
 
 impl ExecutionEngine {
@@ -48,7 +51,7 @@ impl ExecutionEngine {
                 LLVMDisposeMessage(error);
                 Err(result)
             } else {
-                Ok((ExecutionEngine {ee:ee}, FrozenModule {module:module}))
+                Ok((ExecutionEngine {ee:ee, _memory_manager: None}, FrozenModule {module:module}))
             }
         }
     }
@@ -64,7 +67,7 @@ impl ExecutionEngine {
                 LLVMDisposeMessage(error);
                 Err(result)
             } else {
-                Ok((ExecutionEngine {ee:ee}, FrozenModule {module:module}))
+                Ok((ExecutionEngine {ee:ee, _memory_manager: None}, FrozenModule {module:module}))
             }
         }
     }
@@ -80,7 +83,7 @@ impl ExecutionEngine {
                 LLVMDisposeMessage(error);
                 Err(result)
             } else {
-                Ok((ExecutionEngine {ee:ee}, FrozenModule {module:module}))
+                Ok((ExecutionEngine {ee:ee, _memory_manager: None}, FrozenModule {module:module}))
             }
         }
     }
@@ -145,6 +148,76 @@ impl Drop for ExecutionEngine {
     fn drop(&mut self) {
         unsafe {
             LLVMDisposeExecutionEngine(self.to_ref())
+        }
+    }
+}
+
+pub struct MCJITBuilder {
+    options: LLVMMCJITCompilerOptions,
+    memory_manager: Option<Box<MCJITMemoryManager>>
+}
+
+impl MCJITBuilder {
+    pub fn new() -> MCJITBuilder {
+        let options = LLVMMCJITCompilerOptions {
+            OptLevel: 0,
+            CodeModel: LLVMCodeModel::LLVMCodeModelJITDefault,
+            NoFramePointerElim: 0,
+            EnableFastISel: 0,
+            MCJMM: 0 as LLVMMCJITMemoryManagerRef
+        };
+        MCJITBuilder {options: options, memory_manager: None}
+    }
+
+    pub fn set_opt_level(mut self, opt_level: u32) -> Self {
+        self.options.OptLevel = opt_level;
+        self
+    }
+
+    pub fn set_code_model(mut self, code_model: LLVMCodeModel) -> Self {
+        self.options.CodeModel = code_model;
+        self
+    }
+
+    pub fn no_frame_pointer_elim(mut self) -> Self {
+        self.options.NoFramePointerElim = 1;
+        self
+    }
+
+    pub fn enable_fast_isel(mut self) -> Self {
+        self.options.EnableFastISel = 1;
+        self
+    }
+
+    pub fn set_mcjit_memory_manager(mut self, memory_manager: Box<MCJITMemoryManager>) -> Self {
+        self.options.MCJMM = memory_manager.to_ref();
+        self.memory_manager = Some(memory_manager);
+        self
+    }
+
+    pub fn create(mut self, mut module: core::Module) -> Result<(ExecutionEngine, FrozenModule), String> {
+        let mut ee = 0 as LLVMExecutionEngineRef;
+        let mut error = 0 as *mut c_char;
+        unsafe {
+            module.unown();
+            self.memory_manager = self.memory_manager.map(|mut mm| {mm.unown(); mm});
+            if LLVMCreateMCJITCompilerForModule(&mut ee,
+                                                module.to_ref(),
+                                                &mut self.options,
+                                                std::mem::size_of::<LLVMMCJITCompilerOptions>() as size_t,
+                                                &mut error) > 0 {
+                let cstr_buf = std::ffi::CStr::from_ptr(error);
+                let result = String::from_utf8_lossy(cstr_buf.to_bytes()).into_owned();
+                LLVMDisposeMessage(error);
+                Err(result)
+            } else {
+                match self.memory_manager {
+                    Some(memory_manager) => {
+                        Ok((ExecutionEngine {ee:ee, _memory_manager: Some(memory_manager)}, FrozenModule {module:module}))
+                    }
+                    None => Ok((ExecutionEngine {ee:ee, _memory_manager: None}, FrozenModule {module:module}))
+                }
+            }
         }
     }
 }
