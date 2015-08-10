@@ -159,13 +159,12 @@ pub struct MCJITBuilder {
 
 impl MCJITBuilder {
     pub fn new() -> MCJITBuilder {
-        let options = LLVMMCJITCompilerOptions {
-            OptLevel: 0,
-            CodeModel: LLVMCodeModel::LLVMCodeModelJITDefault,
-            NoFramePointerElim: 0,
-            EnableFastISel: 0,
-            MCJMM: 0 as LLVMMCJITMemoryManagerRef
-        };
+        let mut options;
+        unsafe {
+            options = std::mem::uninitialized();
+            LLVMInitializeMCJITCompilerOptions(&mut options, std::mem::size_of::<LLVMMCJITCompilerOptions>() as size_t);
+        }
+
         MCJITBuilder {options: options, memory_manager: None}
     }
 
