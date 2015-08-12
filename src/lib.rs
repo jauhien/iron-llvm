@@ -31,21 +31,17 @@ use core::types::{Type, IntType, IntTypeCtor, FunctionType, FunctionTypeCtor, St
 macro_rules! new_ref_type(
     ($ref_type:ident for $llvm_ref_type:ident implementing $($base_trait:ty),+) => (
         #[derive(Copy, Clone)]
-        pub enum $ref_type {
-            Rf($llvm_ref_type)
-        }
+        pub struct $ref_type ($llvm_ref_type);
 
         impl LLVMRef<$llvm_ref_type> for $ref_type {
             fn to_ref(&self) -> $llvm_ref_type {
-                match *self {
-                    $ref_type::Rf(rf) => rf
-                }
+                self.0
             }
         }
 
         impl LLVMRefCtor<$llvm_ref_type> for $ref_type {
             unsafe fn from_ref(rf: $llvm_ref_type) -> $ref_type {
-                $ref_type::Rf(rf)
+                $ref_type(rf)
             }
         }
 
