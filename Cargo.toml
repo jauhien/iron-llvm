@@ -7,7 +7,7 @@ build = "build.rs"
 
 [dependencies]
 libc = "*"
-llvm_sys = "*"
+llvm-sys = "*"
 
 [build-dependencies]
 cmake = "*"

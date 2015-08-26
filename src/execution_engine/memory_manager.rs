@@ -26,8 +26,8 @@ pub trait MCJITMemoryManager : LLVMRef<LLVMMCJITMemoryManagerRef> {
 }
 
 pub trait SimpleMCJITMemoryManagerImpl {
-    fn allocate_code_section(&mut self, size: usize, alignment: u32, section_id: u32, section_name: &str) -> *mut u8;
-    fn allocate_data_section(&mut self, size: usize, alignment: u32, section_id: u32, section_name: &str, is_read_only: bool) -> *mut u8;
+    fn allocate_code_section(&mut self, size: u32, alignment: u32, section_id: u32, section_name: &str) -> *mut u8;
+    fn allocate_data_section(&mut self, size: u32, alignment: u32, section_id: u32, section_name: &str, is_read_only: bool) -> *mut u8;
     fn finalize_memory(&mut self) -> Result<(), String>;
     fn destroy(&mut self);
 }
@@ -41,7 +41,7 @@ pub struct SimpleMCJITMemoryManager<T: SimpleMCJITMemoryManagerImpl> {
 impl<T: SimpleMCJITMemoryManagerImpl> SimpleMCJITMemoryManager<T> {
     pub fn new(mut implementation: T) -> SimpleMCJITMemoryManager<T> {
 
-        extern fn allocate_code_section_callback<T: SimpleMCJITMemoryManagerImpl>(opaque: *mut c_void, size: usize, alignment: c_uint, section_id: c_uint, section_name: *const c_char) -> *mut u8 {
+        extern fn allocate_code_section_callback<T: SimpleMCJITMemoryManagerImpl>(opaque: *mut c_void, size: u32, alignment: c_uint, section_id: c_uint, section_name: *const c_char) -> *mut u8 {
             let implementation = opaque as *mut T;
             unsafe {
                 let cstr_buf = std::ffi::CStr::from_ptr(section_name);
@@ -50,7 +50,7 @@ impl<T: SimpleMCJITMemoryManagerImpl> SimpleMCJITMemoryManager<T> {
             }
         }
 
-        extern fn allocate_data_section_callback<T: SimpleMCJITMemoryManagerImpl>(opaque: *mut c_void, size: usize, alignment: c_uint, section_id: c_uint, section_name: *const c_char, is_read_only: LLVMBool) -> *mut u8 {
+        extern fn allocate_data_section_callback<T: SimpleMCJITMemoryManagerImpl>(opaque: *mut c_void, size: u32, alignment: c_uint, section_id: c_uint, section_name: *const c_char, is_read_only: LLVMBool) -> *mut u8 {
             let implementation = opaque as *mut T;
             unsafe {
                 let cstr_buf = std::ffi::CStr::from_ptr(section_name);
@@ -163,7 +163,7 @@ pub struct ParentBSMM(LLVMMCJITMemoryManagerRef);
 
 impl ParentBSMM {
     pub fn allocate_code_section(&mut self,
-                                 size: usize,
+                                 size: u32,
                                  alignment: c_uint,
                                  section_id: c_uint,
                                  section_name: &str) -> *mut u8 {
@@ -176,7 +176,7 @@ impl ParentBSMM {
     }
 
     pub fn allocate_date_section(&mut self,
-                                 size: usize,
+                                 size: u32,
                                  alignment: c_uint,
                                  section_id: c_uint,
                                  section_name: &str,
@@ -224,13 +224,13 @@ impl ParentBSMM {
 
 pub struct BSMMFunctions<'a, 'b, 'c, 'd, 'e, 'f> {
     allocate_code_section: Option<Box<FnMut(ParentBSMM,
-                                            usize,
+                                            u32,
                                             u32,
                                             u32,
                                             &str) -> *mut u8 + 'a>>,
 
     allocate_data_section: Option<Box<FnMut(ParentBSMM,
-                                            usize,
+                                            u32,
                                             u32,
                                             u32,
                                             &str,
@@ -295,13 +295,13 @@ impl<'a, 'b, 'c, 'd, 'e, 'f> BindingSectionMemoryManagerBuilder<'a, 'b, 'c, 'd, 
     }
 
     pub fn set_allocate_code_section<F>(mut self, allocate_code_section: F) -> Self
-        where F: 'a + FnMut(ParentBSMM, usize, u32, u32, &str) -> *mut u8 {
+        where F: 'a + FnMut(ParentBSMM, u32, u32, u32, &str) -> *mut u8 {
             self.bsmm_functions.allocate_code_section = Some(Box::new(allocate_code_section));
             self
     }
 
     pub fn set_allocate_data_section<F>(mut self, allocate_data_section: F) -> Self
-        where F: 'b + FnMut(ParentBSMM, usize, u32, u32, &str, bool) -> *mut u8 {
+        where F: 'b + FnMut(ParentBSMM, u32, u32, u32, &str, bool) -> *mut u8 {
             self.bsmm_functions.allocate_data_section = Some(Box::new(allocate_data_section));
             self
    }
@@ -334,7 +334,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f> BindingSectionMemoryManagerBuilder<'a, 'b, 'c, 'd, 
 
         extern fn allocate_code_section_callback(opaque: *mut c_void,
                                                  mm: LLVMMCJITMemoryManagerRef,
-                                                 size: usize,
+                                                 size: u32,
                                                  alignment: c_uint,
                                                  section_id: c_uint,
                                                  section_name: *const c_char) -> *mut u8 {
@@ -350,7 +350,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f> BindingSectionMemoryManagerBuilder<'a, 'b, 'c, 'd, 
 
         extern fn allocate_data_section_callback(opaque: *mut c_void,
                                                  mm: LLVMMCJITMemoryManagerRef,
-                                                 size: usize,
+                                                 size: u32,
                                                  alignment: c_uint,
                                                  section_id: c_uint,
                                                  section_name: *const c_char,
