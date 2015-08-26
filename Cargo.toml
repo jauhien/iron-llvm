@@ -3,7 +3,11 @@
 name = "iron_llvm"
 version = "0.0.1"
 authors = ["Jauhien Piatlicki <jauhien@gentoo.org>"]
+build = "build.rs"
 
 [dependencies]
 libc = "*"
 llvm_sys = "*"
+
+[build-dependencies]
+cmake = "*"

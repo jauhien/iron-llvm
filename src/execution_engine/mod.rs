@@ -11,8 +11,14 @@
 
 pub use self::execution_engine::{ExecutionEngine, MCJITBuilder};
 pub use self::generic_value::GenericValue;
-pub use self::memory_manager::{MCJITMemoryManager, SimpleMCJITMemoryManager, SimpleMCJITMemoryManagerImpl};
+pub use self::memory_manager::{BindingSectionMemoryManagerBuilder,
+                               MCJITMemoryManager,
+                               SectionMemoryManager,
+                               SimpleMCJITMemoryManager,
+                               SimpleMCJITMemoryManagerImpl};
 
 pub mod execution_engine;
 pub mod generic_value;
 pub mod memory_manager;
+
+mod wrappers;

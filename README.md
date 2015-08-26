@@ -6,7 +6,7 @@ It is the very beginning of work on safe bindings. Pull requests are welcome.
 
 TODO list (random points to do in the nearest time):
 
-* memory manager for ExecutionEngine
+* refactor boilerplate in memory manager bindings
 * full ExecutionEngine API
 * ORC
 * change all methods to use static dispatch where appropriate (as in GenericValue)

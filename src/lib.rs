@@ -227,14 +227,14 @@ fn test_ee() {
 
         fn destroy(&mut self) {
             let mut stderr = io::stderr();
-            writeln!(&mut stderr, "destroy called").unwrap();
+            writeln!(&mut stderr, "simple MM: destroy called").unwrap();
         }
     }
 
     impl Drop for TestMM {
         fn drop(&mut self) {
             let mut stderr = io::stderr();
-            writeln!(&mut stderr, "drop called").unwrap();
+            writeln!(&mut stderr, "simple MM: drop called").unwrap();
         }
     }
 
@@ -246,6 +246,51 @@ fn test_ee() {
     match execution_engine::MCJITBuilder::new().set_opt_level(1).set_mcjit_memory_manager(Box::new(mm)).create(m) {
         Ok(_) => {
             writeln!(&mut stderr, "mcjit ok!").unwrap()
+        },
+        Err(error) => writeln!(&mut stderr, "{:?}", error).unwrap()
+    };
+
+    let mm = execution_engine::SectionMemoryManager::new();
+
+    let m = core::Module::new("test_builder");
+
+    match execution_engine::MCJITBuilder::new().set_opt_level(1).set_mcjit_memory_manager(Box::new(mm)).create(m) {
+        Ok(_) => {
+            writeln!(&mut stderr, "mcjit with section MM ok!").unwrap()
+        },
+        Err(error) => writeln!(&mut stderr, "{:?}", error).unwrap()
+    };
+
+    struct DropTester;
+
+    impl DropTester {
+        fn print(&self) {
+            let mut stderr = io::stderr();
+            writeln!(&mut stderr, "binding section MM: destroy called").unwrap();
+        }
+    }
+
+    impl Drop for DropTester {
+        fn drop(&mut self) {
+            let mut stderr = io::stderr();
+            writeln!(&mut stderr, "binding section MM: drop called").unwrap();
+        }
+    }
+
+    let drop_tester = DropTester;
+
+    let mm_builder = execution_engine::BindingSectionMemoryManagerBuilder::new();
+    let mm = mm_builder
+        .set_destroy(move || {
+            drop_tester.print();
+        })
+        .create();
+
+    let m = core::Module::new("test_builder");
+
+    match execution_engine::MCJITBuilder::new().set_opt_level(1).set_mcjit_memory_manager(Box::new(mm)).create(m) {
+        Ok(_) => {
+            writeln!(&mut stderr, "mcjit with binding section MM ok!").unwrap()
         },
         Err(error) => writeln!(&mut stderr, "{:?}", error).unwrap()
     };
