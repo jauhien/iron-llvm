@@ -136,6 +136,20 @@ impl ExecutionEngine {
             LLVMGetFunctionAddress(self.to_ref(), name.as_ptr() as *const c_char)
         }
     }
+
+    pub fn find_function(&self, name: &str) -> Option<core::FunctionRef> {
+        let name = CString::new(name).unwrap();
+        let mut f = 0 as LLVMValueRef;
+        unsafe {
+            if LLVMFindFunction(self.to_ref(),
+                                name.as_ptr() as *const c_char,
+                                &mut f) > 0 {
+                None
+            } else {
+                Some(core::FunctionRef::from_ref(f))
+            }
+        }
+    }
 }
 
 impl LLVMRef<LLVMExecutionEngineRef> for ExecutionEngine {

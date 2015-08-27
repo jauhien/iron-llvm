@@ -213,11 +213,11 @@ fn test_ee() {
     struct TestMM;
 
     impl execution_engine::SimpleMCJITMemoryManagerImpl for TestMM {
-        fn allocate_code_section(&mut self, _size: usize, _alignment: u32, _section_id: u32, _section_name: &str) -> *mut u8 {
+        fn allocate_code_section(&mut self, _size: u32, _alignment: u32, _section_id: u32, _section_name: &str) -> *mut u8 {
             0 as *mut u8
         }
 
-        fn allocate_data_section(&mut self, _size: usize, _alignment: u32, _section_id: u32, _section_name: &str, _is_read_only: bool) -> *mut u8 {
+        fn allocate_data_section(&mut self, _size: u32, _alignment: u32, _section_id: u32, _section_name: &str, _is_read_only: bool) -> *mut u8 {
             0 as *mut u8
         }
 
