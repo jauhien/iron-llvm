@@ -124,7 +124,7 @@ impl ExecutionEngine {
         }
     }
 
-    pub fn run_function<T:core::Function>(&mut self, f: &T, args: &mut [LLVMGenericValueRef]) -> GenericValue {
+    pub fn run_function<T:core::Function>(&self, f: &T, args: &mut [LLVMGenericValueRef]) -> GenericValue {
         unsafe {
             GenericValue::from_ref(LLVMRunFunction(self.to_ref(), f.to_ref(), args.len() as c_uint, args.as_mut_ptr()))
         }
