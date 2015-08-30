@@ -483,3 +483,10 @@ impl<'a, 'b, 'c, 'd, 'e, 'f> BindingSectionMemoryManagerBuilder<'a, 'b, 'c, 'd, 
         }
     }
 }
+
+pub fn get_symbol_address_in_process(name: &str) -> u64 {
+    let name = std::ffi::CString::new(name).unwrap();
+    unsafe {
+        wrappers::LLVM_GetSymbolAddressInProcess(name.as_ptr() as *const c_char)
+    }
+}

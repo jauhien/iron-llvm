@@ -56,4 +56,6 @@ extern "C" {
     uint64_t LLVM_BSMMCallParentGetSymbolAddress(
         LLVMMCJITMemoryManagerRef MM,
         const char *Name);
+
+    uint64_t LLVM_GetSymbolAddressInProcess(const char *Name);
 }

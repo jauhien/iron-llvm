@@ -90,4 +90,6 @@ extern "C" {
     pub fn LLVM_BSMMCallParentGetSymbolAddress(
         MM: LLVMMCJITMemoryManagerRef,
         Name: *const c_char) -> u64;
+
+    pub fn LLVM_GetSymbolAddressInProcess(Name: *const c_char) -> u64;
 }

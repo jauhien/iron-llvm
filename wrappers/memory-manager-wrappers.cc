@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <string>
 
+#include <llvm/ExecutionEngine/RTDyldMemoryManager.h>
 #include <llvm/ExecutionEngine/SectionMemoryManager.h>
 
 namespace {
@@ -221,5 +222,9 @@ extern "C" {
         LLVMMCJITMemoryManagerRef MM,
         const char *Name) {
         return dynamic_cast<BindingSectionMemoryManager*>(unwrap(MM))->callParentGetSymbolAddress(Name);
+    }
+
+    uint64_t LLVM_GetSymbolAddressInProcess(const char *Name) {
+        return RTDyldMemoryManager::getSymbolAddressInProcess(Name);
     }
 }
