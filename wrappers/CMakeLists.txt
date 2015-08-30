@@ -11,7 +11,7 @@ add_definitions(-std=c++11)
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
-add_library(llvm-wrappers STATIC memory-manager-wrappers.cc)
+add_library(llvm-wrappers STATIC memory-manager-wrappers.cc support-wrappers.cc)
 
 llvm_map_components_to_libnames(llvm_libs executionengine)
 

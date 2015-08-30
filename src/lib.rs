@@ -53,6 +53,7 @@ macro_rules! new_ref_type(
 
 pub mod core;
 pub mod execution_engine;
+pub mod support;
 pub mod target;
 
 pub trait LLVMRef<Ref> {
