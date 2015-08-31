@@ -8,7 +8,7 @@
 
 // LLVM Execution Engine Wrappers
 
-use libc::{c_char, c_void, c_uint};
+use libc::{c_char, c_void, c_uint, uintptr_t};
 
 use llvm_sys::prelude::*;
 use llvm_sys::execution_engine::*;
@@ -17,7 +17,7 @@ use llvm_sys::execution_engine::*;
 pub type LLVM_BSMMAllocateCodeSectionCallback =
     extern "C" fn(Opaque: *mut ::libc::c_void,
                   MM: LLVMMCJITMemoryManagerRef,
-                  Size: u32,
+                  Size: uintptr_t,
                   Alignment: ::libc::c_uint,
                   SectionID: ::libc::c_uint,
                   SectionName: *const ::libc::c_char) -> *mut u8;
@@ -26,7 +26,7 @@ pub type LLVM_BSMMAllocateCodeSectionCallback =
 pub type LLVM_BSMMAllocateDataSectionCallback =
     extern "C" fn(Opaque: *mut ::libc::c_void,
                   MM: LLVMMCJITMemoryManagerRef,
-                  Size: u32,
+                  Size: uintptr_t,
                   Alignment: ::libc::c_uint,
                   SectionID: ::libc::c_uint,
                   SectionName: *const ::libc::c_char,
@@ -68,14 +68,14 @@ extern "C" {
 
     pub fn LLVM_BSMMCallParentAllocateCodeSection(
         MM: LLVMMCJITMemoryManagerRef,
-        Size: u32,
+        Size: uintptr_t,
         Alignment: c_uint,
         SectionID: c_uint,
         SectionName: *const c_char) -> *mut u8;
 
     pub fn LLVM_BSMMCallParentAllocateDataSection(
         MM: LLVMMCJITMemoryManagerRef,
-        Size: u32,
+        Size: uintptr_t,
         Alignment: c_uint,
         SectionID: c_uint,
         SectionName: *const c_char,
