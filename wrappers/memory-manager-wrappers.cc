@@ -45,21 +45,6 @@ public:
 
     uint64_t getSymbolAddress(const std::string &Name) override;
 
-
-    uint8_t *callParentAllocateCodeSection(uintptr_t Size, unsigned Alignment,
-                                           unsigned SectionID,
-                                           StringRef SectionName);
-
-    uint8_t *callParentAllocateDataSection(uintptr_t Size, unsigned Alignment,
-                                           unsigned SectionID, StringRef SectionName,
-                                           bool isReadOnly);
-
-    bool callParentFinalizeMemory(std::string *ErrMsg);
-
-    void callParentInvalidateInstructionCache();
-
-    uint64_t callParentGetSymbolAddress(const std::string &Name);
-
 private:
     BSMMFunctions Functions;
     void *Opaque;
@@ -130,30 +115,6 @@ uint64_t BindingSectionMemoryManager::getSymbolAddress(const std::string &Name) 
     }
 }
 
-uint8_t *BindingSectionMemoryManager::callParentAllocateCodeSection(uintptr_t Size, unsigned Alignment,
-                                                                    unsigned SectionID,
-                                                                    StringRef SectionName) {
-    return SectionMemoryManager::allocateCodeSection(Size, Alignment, SectionID, SectionName);
-}
-
-uint8_t *BindingSectionMemoryManager::callParentAllocateDataSection(uintptr_t Size, unsigned Alignment,
-                                                                    unsigned SectionID, StringRef SectionName,
-                                                                    bool isReadOnly) {
-    return SectionMemoryManager::allocateDataSection(Size, Alignment, SectionID, SectionName, isReadOnly);
-}
-
-bool BindingSectionMemoryManager::callParentFinalizeMemory(std::string *ErrMsg) {
-    return SectionMemoryManager::finalizeMemory(ErrMsg);
-}
-
-void BindingSectionMemoryManager::callParentInvalidateInstructionCache() {
-    SectionMemoryManager::invalidateInstructionCache();
-}
-
-uint64_t BindingSectionMemoryManager::callParentGetSymbolAddress(const std::string &Name) {
-    return SectionMemoryManager::getSymbolAddress(Name);
-}
-
 } // anonymous namespace
 
 extern "C" {
@@ -185,7 +146,7 @@ extern "C" {
         unsigned Alignment,
         unsigned SectionID,
         const char *SectionName) {
-        return dynamic_cast<BindingSectionMemoryManager*>(unwrap(MM))->callParentAllocateCodeSection(
+        return dynamic_cast<SectionMemoryManager*>(unwrap(MM))->SectionMemoryManager::allocateCodeSection(
             Size, Alignment, SectionID, SectionName);
     }
 
@@ -196,7 +157,7 @@ extern "C" {
         unsigned SectionID,
         const char *SectionName,
         LLVMBool isReadOnly) {
-        return dynamic_cast<BindingSectionMemoryManager*>(unwrap(MM))->callParentAllocateDataSection(
+        return dynamic_cast<SectionMemoryManager*>(unwrap(MM))->SectionMemoryManager::allocateDataSection(
             Size, Alignment, SectionID, SectionName, isReadOnly);
     }
 
@@ -204,7 +165,7 @@ extern "C" {
         LLVMMCJITMemoryManagerRef MM,
         char **ErrMsg) {
         std::string errMsg;
-        bool result = dynamic_cast<BindingSectionMemoryManager*>(unwrap(MM))->callParentFinalizeMemory(&errMsg);
+        bool result = dynamic_cast<SectionMemoryManager*>(unwrap(MM))->SectionMemoryManager::finalizeMemory(&errMsg);
         if (result && !errMsg.empty()) {
             *ErrMsg = new char[errMsg.size() + 1];
             std::copy(&(errMsg.c_str()[0]), &(errMsg.c_str()[errMsg.size() - 1]), *ErrMsg);
@@ -215,13 +176,13 @@ extern "C" {
     }
 
     void LLVM_BSMMCallParentInvalidateInstructionCache(LLVMMCJITMemoryManagerRef MM) {
-        dynamic_cast<BindingSectionMemoryManager*>(unwrap(MM))->callParentInvalidateInstructionCache();
+        dynamic_cast<SectionMemoryManager*>(unwrap(MM))->SectionMemoryManager::invalidateInstructionCache();
     }
 
     uint64_t LLVM_BSMMCallParentGetSymbolAddress(
         LLVMMCJITMemoryManagerRef MM,
         const char *Name) {
-        return dynamic_cast<BindingSectionMemoryManager*>(unwrap(MM))->callParentGetSymbolAddress(Name);
+        return dynamic_cast<SectionMemoryManager*>(unwrap(MM))->SectionMemoryManager::getSymbolAddress(Name);
     }
 
     uint64_t LLVM_GetSymbolAddressInProcess(const char *Name) {
