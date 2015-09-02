@@ -14,10 +14,10 @@ use libc::{c_char, c_void};
 
 mod wrappers;
 
-pub fn add_symbol<T>(name: &str, reference: &T) {
+// function is marked as unsafe as user can trigger execution of an
+// arbitrary memory address using it
+pub unsafe fn add_symbol(name: &str, ptr: *const ()) {
     let name = std::ffi::CString::new(name).unwrap();
-    let addr = & *reference as *const _ as *const c_void;
-    unsafe {
-        wrappers::LLVM_AddSymbol(name.as_ptr() as *const c_char, addr)
-    }
+    let addr = ptr as *const c_void;
+    wrappers::LLVM_AddSymbol(name.as_ptr() as *const c_char, addr)
 }
