@@ -17,6 +17,7 @@ use libc::{c_char, c_uint, c_ulonglong};
 use llvm_sys::*;
 use llvm_sys::prelude::*;
 use llvm_sys::core::*;
+use llvm_sys::analysis::*;
 
 use ::{LLVMRef, LLVMRefCtor};
 use core::basic_block::{BasicBlock, BasicBlocksIter};
@@ -343,13 +344,13 @@ pub trait Function : Const {
         }
     }
 
-    fn set_call_conv(&self, cc: LLVMCallConv) {
+    fn set_call_conv(&mut self, cc: LLVMCallConv) {
         unsafe {
             LLVMSetFunctionCallConv(self.to_ref(), cc as c_uint)
         }
     }
 
-    fn add_attr(&self, attr: LLVMAttribute) {
+    fn add_attr(&mut self, attr: LLVMAttribute) {
         unsafe {
             LLVMAddFunctionAttr(self.to_ref(), attr)
         }
@@ -361,7 +362,7 @@ pub trait Function : Const {
         }
     }
 
-    fn remove_attr(&self, attr: LLVMAttribute) {
+    fn remove_attr(&mut self, attr: LLVMAttribute) {
         unsafe {
             LLVMRemoveFunctionAttr(self.to_ref(), attr)
         }
@@ -425,17 +426,35 @@ pub trait Function : Const {
         }
     }
 
-    fn append_basic_block_in_context(&self, context: &mut Context, name: &str)  -> LLVMBasicBlockRef {
+    fn append_basic_block_in_context(&mut self, context: &mut Context, name: &str)  -> LLVMBasicBlockRef {
         let name = CString::new(name).unwrap();
         unsafe {
             LLVMAppendBasicBlockInContext(context.to_ref(), self.to_ref(), name.as_ptr() as *const c_char)
         }
     }
 
-    fn append_basic_block(&self, name: &str)  -> LLVMBasicBlockRef {
+    fn append_basic_block(&mut self, name: &str)  -> LLVMBasicBlockRef {
         let name = CString::new(name).unwrap();
         unsafe {
             LLVMAppendBasicBlock(self.to_ref(), name.as_ptr() as *const c_char)
+        }
+    }
+
+    fn verify(&self, action: LLVMVerifierFailureAction) -> bool {
+        unsafe {
+            LLVMVerifyFunction(self.to_ref(), action) > 0
+        }
+    }
+
+    fn view_cfg(&self) {
+        unsafe {
+            LLVMViewFunctionCFG(self.to_ref())
+        }
+    }
+
+    fn view_cfg_only(&self) {
+        unsafe {
+            LLVMViewFunctionCFGOnly(self.to_ref())
         }
     }
 }
