@@ -16,6 +16,7 @@ use libc::c_char;
 
 use llvm_sys::prelude::*;
 use llvm_sys::core::*;
+use llvm_sys::analysis::*;
 
 use ::{LLVMRef, LLVMRefCtor};
 use core::context;
@@ -129,6 +130,20 @@ impl Module {
             }
         } else {
             None
+        }
+    }
+
+    pub fn verify(&self, action: LLVMVerifierFailureAction) -> Result<(), String> {
+        let mut error = 0 as *mut c_char;
+        unsafe {
+            if LLVMVerifyModule(self.to_ref(), action, &mut error) > 0 {
+                let cstr_buf = std::ffi::CStr::from_ptr(error);
+                let result = String::from_utf8_lossy(cstr_buf.to_bytes()).into_owned();
+                LLVMDisposeMessage(error);
+                Err(result)
+            } else {
+                Ok(())
+            }
         }
     }
 
