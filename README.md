@@ -4,8 +4,14 @@ Primarily will be used in my [LLVM Kaleidoscope tutorial for Rust](https://githu
 
 It is the very beginning of work on safe bindings. Pull requests are welcome.
 
+For initial documentation see
+[tutorial](https://github.com/jauhien/iron-kaleidoscope#chapter-2-llvm-ir-code-generation),
+[LLVM programmer's manual](http://llvm.org/docs/ProgrammersManual.html)
+and [LLVM doxygen docs](http://llvm.org/docs/doxygen/html/index.html).
+
 TODO list (random points to do in the nearest time):
 
+* proper documentation
 * refactor boilerplate in memory manager bindings
 * full ExecutionEngine API
 * ORC
