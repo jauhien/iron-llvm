@@ -9,6 +9,9 @@ For initial documentation see
 [LLVM programmer's manual](http://llvm.org/docs/ProgrammersManual.html)
 and [LLVM doxygen docs](http://llvm.org/docs/doxygen/html/index.html).
 
+To use `iron-llvm` you need to install LLVM. Note, that if you use binary distribution, you need
+to have the dev version (with includes). `llvm-config` should be in `PATH`.
+
 TODO list (random points to do in the nearest time):
 
 * proper documentation
