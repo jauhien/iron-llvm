@@ -51,6 +51,7 @@ macro_rules! new_ref_type(
         )
 );
 
+pub mod bitcode;
 pub mod core;
 pub mod execution_engine;
 pub mod support;
